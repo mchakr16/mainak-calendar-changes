@@ -1,0 +1,40 @@
+.react-planner {
+  box-sizing: border-box;
+
+  >.RBS-Scheduler-root {
+    margin: 0 !important;
+  }
+}
+
+.react-planner {
+  width: 98% !important;
+  max-width: 98vw !important;
+  overflow: hidden;
+}
+
+.react-big-schedule {
+  width: 98% !important;
+  max-width: 98% !important;
+}
+
+.scheduler-view {
+  max-width: 80vw !important;
+}
+
+/* .scheduler-bg-table thead tr:nth-child(1),
+.scheduler-bg-table thead tr:nth-child(2),
+.scheduler-bg-table thead tr:nth-child(3) {
+  height: 40px !important;
+} */
+
+.header3-text {
+  text-align: center;
+}
+
+.ant-row.ant-row-space-between.ant-row-middle.css-dev-only-do-not-override-1odpy5d {
+  width: 90vw;
+}
+
+.scheduler-bg-table{
+  table-layout: fixed;
+}
