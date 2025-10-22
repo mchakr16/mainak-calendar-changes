@@ -40,7 +40,15 @@ export const getDateLabel = (schedulerData, viewType, startDate, endDate) => {
   const end = localeDayjs(endDate);
   let dateLabel = '';
 
-  if (viewType === ViewType.Week || (start !== end && (viewType === ViewType.Custom || viewType === ViewType.Custom1 || viewType === ViewType.Custom2))) {
+  const currentView = schedulerData.config.views.find(view => 
+    view.viewType === viewType && 
+    view.showAgenda === schedulerData.showAgenda && 
+    view.isEventPerspective === schedulerData.isEventPerspective
+  );
+
+  if (currentView && currentView.viewName === 'Day') {
+    dateLabel = start.format('MMM D, YYYY');
+  } else if (viewType === ViewType.Week || (start !== end && (viewType === ViewType.Custom || viewType === ViewType.Custom1 || viewType === ViewType.Custom2))) {
     dateLabel = `${start.format('MMM D')}-${end.format('D, YYYY')}`;
     if (start.month() !== end.month()) dateLabel = `${start.format('MMM D')}-${end.format('MMM D, YYYY')}`;
     if (start.year() !== end.year()) dateLabel = `${start.format('MMM D, YYYY')}-${end.format('MMM D, YYYY')}`;

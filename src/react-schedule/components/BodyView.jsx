@@ -16,7 +16,13 @@ function BodyView({ schedulerData }) {
 
       headers.forEach((header) => {
         for (let i = 0; i < subCellsPerHeader; i++) {
-          const key = `${slotId}_${header.time}_${i}`;
+          let headerTime = header.time;
+          if (viewType === ViewType.Week) {
+            const slot = config.shiftSlots[i];
+            const startTime = `${slot.start}:00`;
+            headerTime = headerTime.replace('00:00:00', startTime);
+          }
+          const key = `${slotId}_${headerTime}_${i}`;
           const style = {
             width: widthPerSubCell,
             border: '1px solid #e9e9e9',
@@ -42,7 +48,7 @@ function BodyView({ schedulerData }) {
           }
 
           rowCells.push(
-            <td key={key} style={style}>
+            <td key={key} id={key} style={style}>
               <div />
             </td>
           );

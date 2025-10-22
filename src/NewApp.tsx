@@ -8,6 +8,7 @@ import DemoData from './sample';
 import './react-schedule/css/style.css'
 import weekday from 'dayjs/plugin/weekday';
 import localeData from 'dayjs/plugin/localeData';
+import { getDateLabel } from './react-schedule/helper/behaviors';
 import 'dayjs/locale/en-gb';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
@@ -71,7 +72,7 @@ const NewApp = () => {
                 eventItemLineHeight: 38,
                 nonAgendaSlotMinHeight: 50,
                 customCellWidth: 35,
-                displayweekend: false,
+                displayWeekend: true,
                 shiftCount: 3,
                 shiftSlots: [
                     { start: '06:00', end: '14:00' },
@@ -123,6 +124,7 @@ const NewApp = () => {
                         cellUnit: CellUnit.Hour,
                     };
                 },
+                getDateLabelFunc: getDateLabel,
             }
         );
 
@@ -154,6 +156,34 @@ const NewApp = () => {
     const nextClick = (schedulerData) => {
         schedulerData.next();
         schedulerData.setEvents(DemoData.eventsForTaskView);
+        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+    };
+
+    const onToggleChange = (schedulerData, e) => {
+        schedulerData.config.displayWeekend = !schedulerData.config.displayWeekend;
+        schedulerData.setViewAfterSettingsUpdate();
+        //schedulerData.setEvents(DemoData.eventsForTaskView);
+        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+    };
+
+    const onShiftCountChange = (schedulerData, e) => {
+        schedulerData.config.shiftCount = e;
+        if (e === 2) {
+            schedulerData.config.shiftSlots = [
+                    { start: '06:00', end: '18:00' },
+                    { start: '18:00', end: '06:00' },
+                ];
+        } else {
+            if (e === 3) {
+            schedulerData.config.shiftSlots = [
+                    { start: '06:00', end: '14:00' },
+                    { start: '14:00', end: '22:00' },
+                    { start: '22:00', end: '06:00' },
+                ];
+        }
+        }
+        schedulerData.setViewAfterSettingsUpdate();
+        //schedulerData.setEvents(DemoData.eventsForTaskView);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
@@ -243,6 +273,8 @@ const NewApp = () => {
                             nextClick={nextClick}
                             onSelectDate={onSelectDate}
                             onViewChange={onViewChange}
+                            onToggleChange={onToggleChange}
+                            onShiftCountChange={onShiftCountChange}
                             eventItemClick={eventClicked}
                             updateEventStart={updateEventStart}
                             updateEventEnd={updateEventEnd}

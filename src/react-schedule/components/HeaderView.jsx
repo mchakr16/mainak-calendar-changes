@@ -128,6 +128,31 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
     });
   }
 
+  const generateYearHeaders = () => {
+    if (headers.length === 0 || viewType !== ViewType.Year) return null;
+
+    const headerDates = headers.map(header => new Date(header.time));
+    const yearMap = {};
+    headerDates.forEach(date => {
+      const year = localeDayjs(date).year();
+      if (!yearMap[year]) {
+        yearMap[year] = {
+          year: year,
+          count: 0,
+        };
+      }
+      yearMap[year].count += 1;
+    });
+
+    const yearHeaders = Object.values(yearMap).map((yearInfo, index) => (
+      <td key={`year-${index}`} colSpan={yearInfo.count} style={{ textAlign: 'center', fontWeight: 'bold' }}>
+        {yearInfo.year}
+      </td>
+    ));
+
+    return yearHeaders;
+  };
+
   const generateMonthHeaders = () => {
     if (headers.length === 0) return null;
 
@@ -179,6 +204,24 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
             ([weekKey, group]) => {
               const weekNumber = weekKey.split('-W')[1];
               const colspan = viewType == ViewType.Week ? shiftCount * headers.length : group.length;
+              
+              // For Day view, show the date instead of week number
+              if (viewType === ViewType.Custom) {
+                // Check if this is a Day view by looking at the view configuration
+                const currentView = schedulerData.config.views.find(view => 
+                  view.viewType === viewType && 
+                  view.showAgenda === schedulerData.showAgenda && 
+                  view.isEventPerspective === schedulerData.isEventPerspective
+                );
+                
+                if (currentView && currentView.viewName === 'Day') {
+                  const dayDate = localeDayjs(new Date(group[0].time));
+                  return (
+                    <td key={`day-${weekKey}`} colSpan={colspan}>{dayDate.format('MMM D, YYYY')}</td>
+                  );
+                }
+              }
+              
               return (
                 <td key={`week-${weekKey}`} colSpan={colspan}> Week {weekNumber}</td>
               );
@@ -191,6 +234,9 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
           ));
 
           return (<>
+            {viewType === ViewType.Year && (
+              <tr style={{ height: 40 }}>{generateYearHeaders()}</tr>
+            )}
             {(viewType === ViewType.Month || viewType === ViewType.Quarter || viewType === ViewType.Year) && (
               <tr style={{ height: 40 }}>{generateMonthHeaders()}</tr>
             )}
@@ -199,11 +245,13 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
           </>);
         })()}
 
-      <tr style={{ height: 40 }}>
-        {viewType === ViewType.Week ? headers.map((header, index) => (
-          <td key={`day-header-${index}`} colSpan={shiftCount} style={{ textAlign: 'center', fontSize: fontSize }} > {localeDayjs(new Date(header.time)).format('ddd, MM/D')} </td>
-        )) : headerList}
-      </tr>
+      {viewType !== ViewType.Year && (
+        <tr style={{ height: 40 }}>
+          {viewType === ViewType.Week ? headers.map((header, index) => (
+            <td key={`day-header-${index}`} colSpan={shiftCount} style={{ textAlign: 'center', fontSize: fontSize }} > {localeDayjs(new Date(header.time)).format('ddd, MM/D')} </td>
+          )) : headerList}
+        </tr>
+      )}
       {viewType === ViewType.Week && <tr style={{ height: 40 }}>{shiftList}</tr>}
     </thead>
   );

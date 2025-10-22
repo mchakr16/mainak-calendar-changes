@@ -266,3 +266,114 @@
   border: none;
   background-color: transparent;
 }
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+.toggle-switch input:checked + .slider {
+  background-color: #2196F3;
+}
+.toggle-switch input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-text {
+  margin-right: 10px;
+  font-family: sans-serif;
+  color: #333;
+}
+
+.settings-dropdown {
+  border-radius: 5px;
+  width: 60px;
+  text-align: center;
+  height: 30px;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-percentage {
+  min-width: 50px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.react-big-schedule table.scheduler-table,
+.react-big-schedule table.scheduler-bg-table,
+.react-big-schedule table.scheduler-content-table {
+  table-layout: auto;
+  min-width: 100%;
+  width: auto;
+}
+
+.react-big-schedule .scheduler-view {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  min-width: 100%;
+}
+
+.react-big-schedule .scheduler-content {
+  overflow-x: auto;
+  position: relative;
+  min-width: 100%;
+}
+
+.react-big-schedule {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.react-big-schedule .scheduler-content-table {
+  white-space: nowrap;
+  width: 100%;
+  min-width: 100%;
+}
+
+.react-big-schedule .scheduler-content-table td,
+.react-big-schedule .scheduler-bg-table td,
+.react-big-schedule .scheduler-table td {
+  box-sizing: border-box;
+  overflow: hidden;
+}

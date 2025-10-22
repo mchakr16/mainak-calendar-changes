@@ -1,5 +1,5 @@
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
-import { Calendar, Col, Popover, Radio, Row, Space, Spin } from 'antd';
+import { LeftOutlined, RightOutlined, ZoomInOutlined, ZoomOutOutlined, FullscreenOutlined } from '@ant-design/icons';
+import { Button, Calendar, Col, Popover, Radio, Row, Space, Spin } from 'antd';
 import dayjs from 'dayjs';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
@@ -10,6 +10,11 @@ const RadioGroup = Radio.Group;
 
 const SchedulerHeader = React.forwardRef(({
   onViewChange,
+  onToggleChange,
+  onShiftCountChange,
+  onZoomIn,
+  onZoomOut,
+  onResetZoom,
   goNext,
   goBack,
   onSelectDate,
@@ -21,12 +26,21 @@ const SchedulerHeader = React.forwardRef(({
   const [viewSpinning, setViewSpinning] = useState(false);
   const [dateSpinning, setDateSpinning] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   const { viewType, showAgenda, isEventPerspective, config } = schedulerData;
   const dateLabel = schedulerData.getDateLabel();
   const selectDate = schedulerData.getSelectedDate();
   const calendarLocale = schedulerData.getCalendarPopoverLocale()?.default?.Calendar;
+  const displayWeekend = schedulerData.config.displayWeekend;
+  const shiftCount = schedulerData.config.shiftCount;
   const defaultValue = `${viewType}${showAgenda ? 1 : 0}${isEventPerspective ? 1 : 0}`;
+  const [isToggleChecked, setIsToggleChecked] = useState(displayWeekend);
+
+  const handleToggle = (event) => {
+    setIsToggleChecked(!isToggleChecked);
+    handleEvents(onToggleChange, true, event)
+  };
 
   const handleEvents = (func, isViewSpinning, funcArg = undefined) => {
     if (isViewSpinning) {
@@ -62,6 +76,63 @@ const SchedulerHeader = React.forwardRef(({
       />
     </div>
   );
+
+  const settings = (
+    <div>
+      <div className="toggle-container">
+        <span className="toggle-text">Display Weekend: </span>
+        <label className="toggle-switch">
+          <input type="checkbox" checked={isToggleChecked} onChange={event => handleToggle(event)} />
+          <span className="slider"></span>
+        </label>
+      </div>
+      <div style={{ padding: '10px 0px' }}>
+        <span style={{ fontFamily: 'sans-serif' }}>Number of Shifts: </span>
+        <span style={{ paddingLeft: '12px' }}>
+          <select className="settings-dropdown" defaultValue={shiftCount} onChange={event => handleEvents(onShiftCountChange, true, event)}>
+            <option>2</option><option>3</option>
+          </select>
+        </span>
+      </div>
+      {config.zoomEnabled && (
+        <div style={{ padding: '10px 0px', borderTop: '1px solid #e9e9e9' }}>
+          <div style={{ fontFamily: 'sans-serif', marginBottom: '8px' }}>Zoom Controls:</div>
+          <Space>
+            <Button 
+              size="small" 
+              icon={<ZoomOutOutlined />} 
+              onClick={() => handleEvents(onZoomOut, false)}
+              disabled={!schedulerData.canZoomOut()}
+              title="Zoom Out"
+            />
+            <Button 
+              size="small" 
+              icon={<FullscreenOutlined />} 
+              onClick={() => handleEvents(onResetZoom, false)}
+              title="Fit to Screen"
+            >
+              {Math.round(schedulerData.getZoomLevel() * 100)}%
+            </Button>
+            <Button 
+              size="small" 
+              icon={<ZoomInOutlined />} 
+              onClick={() => handleEvents(onZoomIn, false)}
+              disabled={!schedulerData.canZoomIn()}
+              title="Zoom In"
+            />
+          </Space>
+        </div>
+      )}
+    </div>
+  );
+
+  const handleSettingsOpenChange = newOpen => {
+    setSettingsVisible(newOpen);
+  };
+
+  const hideSettings = () => {
+    setSettingsVisible(false);
+  };
 
   const radioButtonList = config.views.map(item => (
     <RadioButton
@@ -110,6 +181,18 @@ const SchedulerHeader = React.forwardRef(({
         </div>
       </Col>
       <Col>
+        <Popover
+                  content={settings}
+                  placement="bottomLeft"
+                  trigger="click"
+                  title="Settings"
+                  open={settingsVisible}
+                  onOpenChange={handleSettingsOpenChange}
+                >
+                  <Button type="primary">Settings</Button>
+                </Popover>
+      </Col>
+      <Col>
         <Space>
           <Spin spinning={viewSpinning} />
           <RadioGroup
@@ -129,6 +212,11 @@ const SchedulerHeader = React.forwardRef(({
 
 SchedulerHeader.propTypes = {
   onViewChange: PropTypes.func.isRequired,
+  onToggleChange: PropTypes.func.isRequired,
+  onShiftCountChange: PropTypes.func.isRequired,
+  onZoomIn: PropTypes.func,
+  onZoomOut: PropTypes.func,
+  onResetZoom: PropTypes.func,
   goNext: PropTypes.func.isRequired,
   goBack: PropTypes.func.isRequired,
   onSelectDate: PropTypes.func.isRequired,

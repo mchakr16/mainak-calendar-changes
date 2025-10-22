@@ -23,6 +23,8 @@ function Scheduler(props) {
     prevClick,
     nextClick,
     onViewChange,
+    onToggleChange,
+    onShiftCountChange,
     onSelectDate,
     leftCustomHeader,
     rightCustomHeader,
@@ -306,6 +308,14 @@ function Scheduler(props) {
     onViewChange(schedulerData, { viewType, showAgenda, isEventPerspective });
   }, [onViewChange, schedulerData]);
 
+  const handleToggleChange = useCallback(e => {
+    onToggleChange(schedulerData, e.target.value);
+  }, [onToggleChange, schedulerData]);
+
+  const handleShiftCountChange = useCallback(e => {
+    onShiftCountChange(schedulerData, e.target.value);
+  }, [onShiftCountChange, schedulerData]);
+
   const goNext = useCallback(() => {
     nextClick(schedulerData);
   }, [nextClick, schedulerData]);
@@ -317,6 +327,22 @@ function Scheduler(props) {
   const onSelect = useCallback(date => {
     onSelectDate(schedulerData, date);
   }, [onSelectDate, schedulerData]);
+
+  // Zoom handlers
+  const handleZoomIn = useCallback(() => {
+    schedulerData.zoomIn();
+    setState(prevState => ({ ...prevState })); // Force re-render
+  }, [schedulerData]);
+
+  const handleZoomOut = useCallback(() => {
+    schedulerData.zoomOut();
+    setState(prevState => ({ ...prevState })); // Force re-render
+  }, [schedulerData]);
+
+  const handleResetZoom = useCallback(() => {
+    schedulerData.resetZoom();
+    setState(prevState => ({ ...prevState })); // Force re-render
+  }, [schedulerData]);
 
   // Rendering
   const { viewType, renderData, showAgenda, config } = schedulerData;
@@ -468,6 +494,11 @@ function Scheduler(props) {
         marginBottom: config.headerEnabled ? '24px' : undefined,
       }}
       onViewChange={handleViewChange}
+      onToggleChange={handleToggleChange}
+      onShiftCountChange={handleShiftCountChange}
+      onZoomIn={handleZoomIn}
+      onZoomOut={handleZoomOut}
+      onResetZoom={handleResetZoom}
       schedulerData={schedulerData}
       onSelectDate={onSelect}
       goNext={goNext}
@@ -481,7 +512,7 @@ function Scheduler(props) {
     <table id="RBS-Scheduler-root" className="react-big-schedule" style={{ width: `${width}px` }}>
       <thead>
         <tr>
-          <td colSpan="2">{schedulerHeader}</td>
+          <td colSpan="3">{schedulerHeader}</td>
         </tr>
       </thead>
       <tbody>{tbodyContent}</tbody>
@@ -495,6 +526,8 @@ Scheduler.propTypes = {
   prevClick: PropTypes.func.isRequired,
   nextClick: PropTypes.func.isRequired,
   onViewChange: PropTypes.func.isRequired,
+  onToggleChange: PropTypes.func.isRequired,
+  onShiftCountChange: PropTypes.func.isRequired,
   onSelectDate: PropTypes.func.isRequired,
   onSetAddMoreState: PropTypes.func,
   updateEventStart: PropTypes.func,

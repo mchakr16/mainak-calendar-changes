@@ -27,6 +27,13 @@ export default {
   yearCellWidth: 80,
   customCellWidth: 80,
 
+  // Zoom configuration
+  zoomEnabled: true,
+  zoomLevel: 1.0, // Default zoom (Fit to Screen)
+  minZoomLevel: 0.5, // 50% zoom out
+  maxZoomLevel: 2.0, // 200% zoom in
+  zoomStep: 0.25, // Zoom increment/decrement step
+
   dayMaxEvents: 99,
   weekMaxEvents: 99,
   monthMaxEvents: 99,
