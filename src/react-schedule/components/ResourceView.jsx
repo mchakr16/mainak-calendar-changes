@@ -1,6 +1,6 @@
 import { MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, { createElement } from 'react';
 
 function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, slotItemTemplateResolver, toggleExpandFunc }) {
   const { renderData } = schedulerData;
@@ -17,7 +17,7 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
   const renderSlotItem = (item, indents) => {
     let indent = <span key={`es${item.indent}`} className="expander-space" />;
 
-   const { key, ...restIconProps } = {
+    const { key, ...restIconProps } = {
       key: `es${item.indent}`, onClick: () => handleToggleExpand(item),
     };
 

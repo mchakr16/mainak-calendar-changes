@@ -17,9 +17,9 @@
   max-width: 98% !important;
 }
 
-.scheduler-view {
-  max-width: 80vw !important;
-}
+/* .scheduler-view {
+  max-width: 90vw !important;
+} */
 
 /* .scheduler-bg-table thead tr:nth-child(1),
 .scheduler-bg-table thead tr:nth-child(2),

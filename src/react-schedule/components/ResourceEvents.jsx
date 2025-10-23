@@ -1,13 +1,7 @@
 /* eslint-disable */
 import { PropTypes } from 'prop-types';
-import React, { Component } from 'react';
-import {
-  CellUnit,
-  DATETIME_FORMAT,
-  DnDTypes,
-  SummaryPos,
-  ViewType,
-} from '../config/default';
+import React, { Component, createElement } from 'react';
+import { CellUnit, DATETIME_FORMAT, DnDTypes, SummaryPos, ViewType } from '../config/default';
 import { getPos } from '../helper/utility';
 import AddMore from './AddMore';
 import SelectedArea from './SelectedArea';
@@ -66,10 +60,7 @@ class ResourceEvents extends Component {
   }
 
   supportTouchHelper = (evType = 'add') => {
-    const ev =
-      evType === 'add'
-        ? this.eventContainer.addEventListener
-        : this.eventContainer.removeEventListener;
+    const ev = evType === 'add' ? this.eventContainer.addEventListener : this.eventContainer.removeEventListener;
     if (this.supportTouch) {
       // ev('touchstart', this.initDrag, false);
     } else {
@@ -77,7 +68,7 @@ class ResourceEvents extends Component {
     }
   };
 
-  initDrag = (ev) => {
+  initDrag = ev => {
     const { isSelecting } = this.state;
     if (isSelecting) return;
     if ((ev.srcElement || ev.target) !== this.eventContainer) return;
@@ -93,12 +84,7 @@ class ResourceEvents extends Component {
     }
 
     const { schedulerData } = this.props;
-    const contentCellWidth = schedulerData.getContentCellWidth();
-    const shiftsPerDay = schedulerData.config.shiftCount || 1;
-    let cellWidth = contentCellWidth;
-    if (schedulerData.viewType == ViewType.Week) {
-      cellWidth = contentCellWidth / shiftsPerDay;
-    }
+    const cellWidth = schedulerData.getContentCellWidth();
     const pos = getPos(this.eventContainer);
     const startX = clientX - pos.x;
     const leftIndex = Math.floor(startX / cellWidth);
@@ -106,14 +92,7 @@ class ResourceEvents extends Component {
     const rightIndex = Math.ceil(startX / cellWidth);
     const width = (rightIndex - leftIndex) * cellWidth;
 
-    this.setState({
-      startX,
-      left,
-      leftIndex,
-      width,
-      rightIndex,
-      isSelecting: true,
-    });
+    this.setState({ startX, left, leftIndex, width, rightIndex, isSelecting: true });
 
     if (this.supportTouch) {
       document.documentElement.addEventListener('touchmove', this.doDrag, false);
@@ -127,7 +106,7 @@ class ResourceEvents extends Component {
     document.ondragstart = () => false;
   };
 
-  doDrag = (ev) => {
+  doDrag = ev => {
     ev.stopPropagation();
 
     const [clientX, toReturn] = this.dragHelper(ev, 'do');
@@ -138,12 +117,7 @@ class ResourceEvents extends Component {
     const { startX } = this.state;
     const { schedulerData } = this.props;
     const { headers } = schedulerData;
-    const contentCellWidth = schedulerData.getContentCellWidth();
-    const shiftsPerDay = schedulerData.config.shiftCount || 1;
-    let cellWidth = contentCellWidth;
-    if (schedulerData.viewType == ViewType.Week) {
-      cellWidth = contentCellWidth / shiftsPerDay;
-    }
+    const cellWidth = schedulerData.getContentCellWidth();
     const pos = getPos(this.eventContainer);
     const currentX = clientX - pos.x;
     let leftIndex = Math.floor(Math.min(startX, currentX) / cellWidth);
@@ -171,16 +145,12 @@ class ResourceEvents extends Component {
     return [clientX, false];
   };
 
-  stopDrag = (ev) => {
+  stopDrag = ev => {
     ev.stopPropagation();
 
     const { schedulerData, newEvent, resourceEvents } = this.props;
     const { headers, events, config, cellUnit, localeDayjs, viewType } = schedulerData;
     const { leftIndex, rightIndex } = this.state;
-    // For Shift
-    const shiftsPerDay = schedulerData.config.shiftSlots;
-    const shiftCount = schedulerData.config.shiftCount || 1;
-
     if (this.supportTouch) {
       document.documentElement.removeEventListener('touchmove', this.doDrag, false);
       document.documentElement.removeEventListener('touchend', this.stopDrag, false);
@@ -192,101 +162,41 @@ class ResourceEvents extends Component {
     document.onselectstart = null;
     document.ondragstart = null;
 
-    if (leftIndex < 0 || rightIndex <= leftIndex) {
-      this.resetSelectionState();
-      return;
-    }
-
-    const headerIndexStart = Math.floor(leftIndex / shiftCount);
-    const headerIndexEnd = Math.floor((rightIndex - 1) / shiftCount);
-
-    const startHeader = resourceEvents.headerItems?.[headerIndexStart] || headers?.[headerIndexStart];
-    const endHeader = resourceEvents.headerItems?.[headerIndexEnd] || headers?.[headerIndexEnd];
-
-    if (!startHeader || !endHeader) {
-      this.resetSelectionState();
-      return;
-    }
-
-    const startShiftIndex = leftIndex % shiftCount;
-    const endShiftIndex = (rightIndex - 1) % shiftCount;
-
-    let endTime;
-    let startTime;
-
-    if (viewType === ViewType.Week) {
-      const getShiftDateTime = (baseDateStr, timeStr) => {
-        const date = localeDayjs(new Date(baseDateStr));
-        const [hour, minute] = timeStr.split(':').map(Number);
-        return date.hour(hour).minute(minute).second(0).format(DATETIME_FORMAT);
-      };
-
-      startTime = getShiftDateTime(startHeader.start, shiftsPerDay[startShiftIndex]?.start || '00:00');
-      const endTimeRaw = shiftsPerDay[endShiftIndex]?.end || '23:59';
-
-      if (endTimeRaw < shiftsPerDay[endShiftIndex]?.start) {
-        endTime = getShiftDateTime(endHeader.start, endTimeRaw);
-      } else {
-        endTime = localeDayjs(new Date(endHeader.start))
-          .hour(...endTimeRaw.split(':').map(Number))
-          .minute(0)
-          .second(0)
-          .format(DATETIME_FORMAT);
-      }
-    } else {
-      startTime = headers[leftIndex].time;
-      endTime = resourceEvents.headerItems[rightIndex - 1].end;
-    }
-
+    const startTime = headers[leftIndex].time;
+    let endTime = resourceEvents.headerItems[rightIndex - 1].end;
     if (cellUnit !== CellUnit.Hour && viewType !== ViewType.Week) {
-      endTime = localeDayjs(new Date(endHeader.start))
-        .hour(23)
-        .minute(59)
-        .second(59)
-        .format(DATETIME_FORMAT);
+      endTime = localeDayjs(new Date(resourceEvents.headerItems[rightIndex - 1].start))
+        .hour(23).minute(59).second(59).format(DATETIME_FORMAT);
     }
+    const { slotId } = resourceEvents;
+    const { slotName } = resourceEvents;
 
-    const { slotId, slotName } = resourceEvents;
+    this.setState({
+      startX: 0,
+      leftIndex: 0,
+      left: 0,
+      rightIndex: 0,
+      width: 0,
+      isSelecting: false,
+    });
 
-    // Reset selection state helper
-    this.resetSelectionState = () => {
-      this.setState({
-        startX: 0,
-        leftIndex: 0,
-        left: 0,
-        rightIndex: 0,
-        width: 0,
-        isSelecting: false,
-      });
-    };
-
-    this.resetSelectionState();
-
-    // Conflict detection
     let hasConflict = false;
     if (config.checkConflict) {
       const start = localeDayjs(new Date(startTime));
-      const end = localeDayjs(new Date(endTime));
+      const end = localeDayjs(endTime);
 
-      events.forEach((e) => {
+      events.forEach(e => {
         if (schedulerData._getEventSlotId(e) === slotId) {
-          const eStart = localeDayjs(new Date(e.start));
-          const eEnd = localeDayjs(new Date(e.end));
-          if (
-            (start >= eStart && start < eEnd) ||
-            (end > eStart && end <= eEnd) ||
-            (eStart >= start && eStart < end) ||
-            (eEnd > start && eEnd <= end)
-          ) {
-            hasConflict = true;
-          }
+          const eStart = localeDayjs(e.start);
+          const eEnd = localeDayjs(e.end);
+          if ((start >= eStart && start < eEnd) || (end > eStart && end <= eEnd) || (eStart >= start && eStart < end) || (eEnd > start && eEnd <= end)) hasConflict = true;
         }
       });
     }
 
     if (hasConflict) {
       const { conflictOccurred } = this.props;
-      if (conflictOccurred) {
+      if (conflictOccurred !== undefined) {
         conflictOccurred(
           schedulerData,
           'New',
@@ -302,38 +212,22 @@ class ResourceEvents extends Component {
           slotId,
           slotName,
           startTime,
-          endTime
+          endTime,
         );
       } else {
-        console.log(
-          'Conflict occurred, set conflictOccurred func in Scheduler to handle it'
-        );
+        console.log('Conflict occurred, set conflictOccurred func in Scheduler to handle it');
       }
-    } else if (newEvent) {
-      newEvent(schedulerData, slotId, slotName, startTime, endTime);
-    }
+    } else if (newEvent !== undefined) newEvent(schedulerData, slotId, slotName, startTime, endTime);
   };
 
-  cancelDrag = (ev) => {
+  cancelDrag = ev => {
     ev.stopPropagation();
 
     const { isSelecting } = this.state;
     if (isSelecting) {
-      document.documentElement.removeEventListener(
-        'touchmove',
-        this.doDrag,
-        false
-      );
-      document.documentElement.removeEventListener(
-        'touchend',
-        this.stopDrag,
-        false
-      );
-      document.documentElement.removeEventListener(
-        'touchcancel',
-        this.cancelDrag,
-        false
-      );
+      document.documentElement.removeEventListener('touchmove', this.doDrag, false);
+      document.documentElement.removeEventListener('touchend', this.stopDrag, false);
+      document.documentElement.removeEventListener('touchcancel', this.cancelDrag, false);
       document.onselectstart = null;
       document.ondragstart = null;
       this.setState({
@@ -347,7 +241,7 @@ class ResourceEvents extends Component {
     }
   };
 
-  onAddMoreClick = (headerItem) => {
+  onAddMoreClick = headerItem => {
     const { onSetAddMoreState, resourceEvents, schedulerData } = this.props;
     if (onSetAddMoreState) {
       const { config } = schedulerData;
@@ -370,13 +264,12 @@ class ResourceEvents extends Component {
     }
   };
 
-  eventContainerRef = (element) => {
+  eventContainerRef = element => {
     this.eventContainer = element;
   };
 
   render() {
-    const { resourceEvents, schedulerData, connectDropTarget, dndSource } =
-      this.props;
+    const { resourceEvents, schedulerData, connectDropTarget, dndSource } = this.props;
     const { cellUnit, startDate, endDate, config, localeDayjs } = schedulerData;
     const { isSelecting, left, width } = this.state;
     const cellWidth = schedulerData.getContentCellWidth();
@@ -384,54 +277,35 @@ class ResourceEvents extends Component {
     const rowWidth = schedulerData.getContentTableWidth();
     const DnDEventItem = dndSource.getDragSource();
 
-    const selectedArea = isSelecting ? (
-      <SelectedArea {...this.props} left={left} width={width} />
-    ) : (
-      <div />
-    );
+    const selectedArea = isSelecting ? <SelectedArea {...this.props} left={left} width={width} /> : <div />;
 
     const eventList = [];
     resourceEvents.headerItems.forEach((headerItem, index) => {
       if (headerItem.count > 0 || headerItem.summary !== undefined) {
-        const isTop =
-          config.summaryPos === SummaryPos.TopRight ||
-          config.summaryPos === SummaryPos.Top ||
-          config.summaryPos === SummaryPos.TopLeft;
-        const marginTop =
-          resourceEvents.hasSummary && isTop
-            ? 1 + config.eventItemLineHeight
-            : 1;
-        const renderEventsMaxIndex =
-          headerItem.addMore === 0 ? cellMaxEvents : headerItem.addMoreIndex;
+        const isTop = config.summaryPos === SummaryPos.TopRight || config.summaryPos === SummaryPos.Top || config.summaryPos === SummaryPos.TopLeft;
+        const marginTop = resourceEvents.hasSummary && isTop ? 1 + config.eventItemLineHeight : 1;
+        const renderEventsMaxIndex = headerItem.addMore === 0 ? cellMaxEvents : headerItem.addMoreIndex;
 
         headerItem.events.forEach((evt, idx) => {
           if (idx < renderEventsMaxIndex && evt !== undefined && evt.render) {
             let durationStart = localeDayjs(new Date(startDate));
             let durationEnd = localeDayjs(endDate);
             if (cellUnit === CellUnit.Hour) {
-              durationStart = localeDayjs(new Date(startDate)).add(
-                config.dayStartFrom,
-                'hours'
-              );
-              durationEnd = localeDayjs(endDate).add(
-                config.dayStopTo + 1,
-                'hours'
-              );
+              durationStart = localeDayjs(new Date(startDate)).add(config.dayStartFrom, 'hours');
+              durationEnd = localeDayjs(endDate).add(config.dayStopTo + 1, 'hours');
             }
             const eventStart = localeDayjs(evt.eventItem.start);
             const eventEnd = localeDayjs(evt.eventItem.end);
             const isStart = eventStart >= durationStart;
             const isEnd = eventEnd <= durationEnd;
             const left = index * cellWidth + (index > 0 ? 2 : 3);
-            const width =
-              evt.span * cellWidth - (index > 0 ? 5 : 6) > 0
-                ? evt.span * cellWidth - (index > 0 ? 5 : 6)
-                : 0;
+            const width = evt.span * cellWidth - (index > 0 ? 5 : 6) > 0 ? evt.span * cellWidth - (index > 0 ? 5 : 6) : 0;
             const top = marginTop + idx * config.eventItemLineHeight;
+            const eventKey = `ev-${index}-${idx}-${evt.eventItem.id ?? 'temp'}`;
             const eventItem = (
               <DnDEventItem
                 {...this.props}
-                key={evt.eventItem.id}
+                key={eventKey}
                 eventItem={evt.eventItem}
                 isStart={isStart}
                 isEnd={isEnd}
@@ -450,12 +324,11 @@ class ResourceEvents extends Component {
         if (headerItem.addMore > 0) {
           const left = index * cellWidth + (index > 0 ? 2 : 3);
           const width = cellWidth - (index > 0 ? 5 : 6);
-          const top =
-            marginTop + headerItem.addMoreIndex * config.eventItemLineHeight;
+          const top = marginTop + headerItem.addMoreIndex * config.eventItemLineHeight;
           const addMoreItem = (
             <AddMore
               {...this.props}
-              key={headerItem.time}
+              key={`add-${index}-${headerItem.time}`}
               headerItem={headerItem}
               number={headerItem.addMore}
               left={left}
@@ -468,44 +341,25 @@ class ResourceEvents extends Component {
         }
 
         if (headerItem.summary !== undefined) {
-          const top = isTop
-            ? 1
-            : resourceEvents.rowHeight - config.eventItemLineHeight + 1;
+          const top = isTop ? 1 : resourceEvents.rowHeight - config.eventItemLineHeight + 1;
           const left = index * cellWidth + (index > 0 ? 2 : 3);
           const width = cellWidth - (index > 0 ? 5 : 6);
-          const key = `${resourceEvents.slotId}_${headerItem.time}`;
-          const summary = (
-            <Summary
-              key={key}
-              schedulerData={schedulerData}
-              summary={headerItem.summary}
-              left={left}
-              width={width}
-              top={top}
-            />
-          );
+          const key = `summary-${resourceEvents.slotId}-${headerItem.time}-${index}`;
+          const summary = <Summary key={key} schedulerData={schedulerData} summary={headerItem.summary} left={left} width={width} top={top} />;
           eventList.push(summary);
         }
       }
     });
 
     const eventContainer = (
-      <div
-        ref={this.eventContainerRef}
-        className="event-container"
-        style={{ height: resourceEvents.rowHeight }}
-      >
+      <div ref={this.eventContainerRef} className="event-container" style={{ height: resourceEvents.rowHeight }}>
         {selectedArea}
         {eventList}
       </div>
     );
     return (
       <tr>
-        <td style={{ width: rowWidth }}>
-          {config.dragAndDropEnabled
-            ? connectDropTarget(eventContainer)
-            : eventContainer}
-        </td>
+        <td style={{ width: rowWidth }}>{config.dragAndDropEnabled ? connectDropTarget(eventContainer) : eventContainer}</td>
       </tr>
     );
   }

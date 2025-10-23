@@ -40,9 +40,9 @@ export const getDateLabel = (schedulerData, viewType, startDate, endDate) => {
   const end = localeDayjs(endDate);
   let dateLabel = '';
 
-  const currentView = schedulerData.config.views.find(view => 
-    view.viewType === viewType && 
-    view.showAgenda === schedulerData.showAgenda && 
+  const currentView = schedulerData.config.views.find(view =>
+    view.viewType === viewType &&
+    view.showAgenda === schedulerData.showAgenda &&
     view.isEventPerspective === schedulerData.isEventPerspective
   );
 

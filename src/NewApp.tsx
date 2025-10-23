@@ -2,13 +2,12 @@ import { Col, Row } from 'antd';
 import { useEffect, useReducer, useState, useRef } from 'react';
 import { Scheduler, SchedulerData, ViewType, DATE_FORMAT, DnDSource, CellUnit } from './react-schedule/index';
 import TaskItem from './TaskItem';
-import TaskList from './TaskList';
+// import TaskList from './TaskList';
 import dayjs from 'dayjs';
 import DemoData from './sample';
 import './react-schedule/css/style.css'
 import weekday from 'dayjs/plugin/weekday';
 import localeData from 'dayjs/plugin/localeData';
-import { getDateLabel } from './react-schedule/helper/behaviors';
 import 'dayjs/locale/en-gb';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
@@ -39,6 +38,28 @@ const reducer = (state, action) => {
     }
 };
 
+const generateShiftSlots = (shiftCount, dayStartFrom) => {
+    const slots: any = [];
+    const totalHours = 24;
+    const slotHours = totalHours / shiftCount;
+
+    let currentStart = dayStartFrom;
+
+    for (let i = 0; i < shiftCount; i++) {
+        const startHour = currentStart % 24;
+        const endHour = (startHour + slotHours) % 24;
+
+        const pad = (h) => (h < 10 ? `0${h}` : `${h}`);
+        slots.push({
+            start: `${pad(startHour)}:00`,
+            end: `${pad(endHour)}:00`,
+            label: `Shift ${i + 1}`
+        });
+        currentStart = (currentStart + slotHours) % 24;
+    }
+    return slots;
+}
+
 let schedulerData: any;
 
 const NewApp = () => {
@@ -53,17 +74,21 @@ const NewApp = () => {
 
     const plannerRef = useRef<HTMLDivElement>(null);
 
-    const dayStartFrom = 7; // update dayStartFrom props
+    const savedDate = sessionStorage.getItem('selectedSchedulerDate');
+    const initialDate = savedDate || dayjs().format(DATE_FORMAT);
+
+    const dayStartFrom = 6; // update dayStartFrom props
+    const SHIFT_COUNT = 3; // update shift count
+    const generatedSlots = generateShiftSlots(SHIFT_COUNT, dayStartFrom);
 
     useEffect(() => {
-        schedulerData = new SchedulerData(
-            dayjs().format(DATE_FORMAT),
-            ViewType.Week,
+        schedulerData = new SchedulerData(initialDate, ViewType.Week,
             false,
             false,
             {
                 schedulerWidth: '85%',
                 minuteStep: 60,
+                schedulerMaxHeight:400,
                 dayResourceTableWidth: 150,
                 weekResourceTableWidth: 160,
                 customResourceTableWidth: 150,
@@ -71,14 +96,14 @@ const NewApp = () => {
                 eventItemHeight: 36,
                 eventItemLineHeight: 38,
                 nonAgendaSlotMinHeight: 50,
+                displayWeekend: false,
                 customCellWidth: 35,
-                displayWeekend: true,
-                shiftCount: 3,
-                shiftSlots: [
-                    { start: '06:00', end: '14:00' },
-                    { start: '14:00', end: '22:00' },
-                    { start: '22:00', end: '06:00' },
-                ],
+                weekCellWidth: 45,
+                monthCellWidth: 40,
+                quarterCellWidth: 75,
+                defaultExpanded: false,
+                shiftCount: SHIFT_COUNT,
+                shiftSlots: generatedSlots,
                 views: [
                     {
                         viewName: 'Day',
@@ -98,6 +123,7 @@ const NewApp = () => {
                         showAgenda: false,
                         isEventPerspective: false,
                     },
+                    { viewName: 'Quarter', viewType: ViewType.Quarter, showAgenda: false, isEventPerspective: false },
                     {
                         viewName: 'Year',
                         viewType: ViewType.Year,
@@ -116,15 +142,10 @@ const NewApp = () => {
                         .hour(Number(dayStartFrom))
                         .minute(0)
                         .second(0);
-                    const endDate = startDate.add(24, 'hour');
+                    const endDate = startDate.add(23, 'hour');
 
-                    return {
-                        startDate,
-                        endDate,
-                        cellUnit: CellUnit.Hour,
-                    };
+                    return { startDate, endDate, cellUnit: CellUnit.Hour };
                 },
-                getDateLabelFunc: getDateLabel,
             }
         );
 
@@ -140,11 +161,8 @@ const NewApp = () => {
                 TaskItem as any,
                 true,
                 DnDTypes.TASK
-            )
-        );
-        return () => {
-            schedulerData = null;
-        };
+            ));
+        return () => { schedulerData = null; };
     }, []);
 
     const prevClick = (schedulerData) => {
@@ -156,34 +174,6 @@ const NewApp = () => {
     const nextClick = (schedulerData) => {
         schedulerData.next();
         schedulerData.setEvents(DemoData.eventsForTaskView);
-        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
-    };
-
-    const onToggleChange = (schedulerData, e) => {
-        schedulerData.config.displayWeekend = !schedulerData.config.displayWeekend;
-        schedulerData.setViewAfterSettingsUpdate();
-        //schedulerData.setEvents(DemoData.eventsForTaskView);
-        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
-    };
-
-    const onShiftCountChange = (schedulerData, e) => {
-        schedulerData.config.shiftCount = e;
-        if (e === 2) {
-            schedulerData.config.shiftSlots = [
-                    { start: '06:00', end: '18:00' },
-                    { start: '18:00', end: '06:00' },
-                ];
-        } else {
-            if (e === 3) {
-            schedulerData.config.shiftSlots = [
-                    { start: '06:00', end: '14:00' },
-                    { start: '14:00', end: '22:00' },
-                    { start: '22:00', end: '06:00' },
-                ];
-        }
-        }
-        schedulerData.setViewAfterSettingsUpdate();
-        //schedulerData.setEvents(DemoData.eventsForTaskView);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
@@ -200,6 +190,7 @@ const NewApp = () => {
 
     const onSelectDate = (schedulerData, date) => {
         schedulerData.setDate(date);
+        sessionStorage.setItem('selectedSchedulerDate', date);
         schedulerData.setEvents(DemoData.eventsForTaskView);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
@@ -262,6 +253,19 @@ const NewApp = () => {
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
+    const onToggleChange = (schedulerData) => {
+        schedulerData.config.displayWeekend = !schedulerData.config.displayWeekend;
+        schedulerData.setViewAfterSettingsUpdate();
+        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+    };
+
+    const onShiftCountChange = (schedulerData, shiftCount) => {
+        schedulerData.config.shiftCount = shiftCount;
+        schedulerData.config.shiftSlots = generateShiftSlots(shiftCount, dayStartFrom);
+        schedulerData.setViewAfterSettingsUpdate();
+        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+    };
+
     return (
         <div ref={plannerRef}>
             {state.showScheduler && (
@@ -273,8 +277,6 @@ const NewApp = () => {
                             nextClick={nextClick}
                             onSelectDate={onSelectDate}
                             onViewChange={onViewChange}
-                            onToggleChange={onToggleChange}
-                            onShiftCountChange={onShiftCountChange}
                             eventItemClick={eventClicked}
                             updateEventStart={updateEventStart}
                             updateEventEnd={updateEventEnd}
@@ -283,15 +285,17 @@ const NewApp = () => {
                             subtitleGetter={subtitleGetter}
                             dndSources={[taskDndSource]}
                             toggleExpandFunc={toggleExpandFunc}
+                            onToggleChange={onToggleChange}
+                            onShiftCountChange={onShiftCountChange}
                         />
                     </Col>
-                    <Col style={{ width: '15%', marginTop: '5%' }}>
+                    {/* <Col style={{ width: '15%', marginTop: '5%' }}>
                         <TaskList
                             schedulerData={state.viewModel}
                             newEvent={newEvent}
                             taskDndSource={taskDndSource}
                         />
-                    </Col>
+                    </Col> */}
                 </Row>
             )}
         </div>

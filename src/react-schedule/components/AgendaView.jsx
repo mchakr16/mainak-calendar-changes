@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { createElement } from 'react';
 import PropTypes from 'prop-types';
 import AgendaResourceEvents from './AgendaResourceEvents';
 

@@ -4,17 +4,22 @@
 /* eslint-disable no-return-assign */
 import { Popover } from 'antd';
 import { PropTypes } from 'prop-types';
-import React, { Component } from 'react';
-import { CellUnit, DATETIME_FORMAT, DnDTypes } from '../config/default';
+import React, { Component, createElement } from 'react';
+import { CellUnit, DATETIME_FORMAT, DnDTypes, ViewType } from '../config/default';
 import EventItemPopover from './EventItemPopover';
 
-const stopDragHelper = ({ count, cellUnit, config, dragType, eventItem, localeDayjs, value }) => {
+const stopDragHelper = ({ count, cellUnit, config, dragType, eventItem, localeDayjs, value, viewType }) => {
   const whileTrue = true;
   let tCount = 0;
   let i = 0;
   let result = value;
   return new Promise(resolve => {
     if (count !== 0 && cellUnit !== CellUnit.Hour && config.displayWeekend === false) {
+      const isWeekWithShifts = viewType === ViewType.Week && config.shiftCount > 1;
+      if (isWeekWithShifts) {
+        resolve(result);
+        return;
+      }
       while (whileTrue) {
         i = count > 0 ? i + 1 : i - 1;
         const date = localeDayjs(new Date(eventItem[dragType])).add(i, 'days');
@@ -168,7 +173,7 @@ class EventItem extends Component {
     } else {
       clientX = ev.clientX;
     }
-    const { cellUnit, events, config, localeDayjs } = schedulerData;
+    const { cellUnit, events, config, localeDayjs, viewType } = schedulerData;
     const cellWidth = schedulerData.getContentCellWidth();
     const offset = leftIndex > 0 ? 5 : 6;
     const minWidth = cellWidth - offset;
@@ -185,9 +190,18 @@ class EventItem extends Component {
     let count = (sign > 0 ? Math.floor(Math.abs(deltaX) / cellWidth) : Math.ceil(Math.abs(deltaX) / cellWidth)) * sign;
     if (newWidth < minWidth) count = rightIndex - leftIndex - 1;
     else if (newWidth > maxWidth) count = -leftIndex;
-    let newStart = localeDayjs(new Date(eventItem.start))
-      .add(cellUnit === CellUnit.Hour ? count * config.minuteStep : count, cellUnit === CellUnit.Hour ? 'minutes' : 'days')
-      .format(DATETIME_FORMAT);
+    // let newStart = localeDayjs(new Date(eventItem.start))
+    //   .add(cellUnit === CellUnit.Hour ? count * config.minuteStep : count, cellUnit === CellUnit.Hour ? 'minutes' : 'days').format(DATETIME_FORMAT);
+
+    let newStart;
+    const isWeekWithShifts = viewType === ViewType.Week && config.shiftCount > 1;
+    if (cellUnit === CellUnit.Hour) {
+      newStart = localeDayjs(new Date(eventItem.start)).add(count * config.minuteStep, 'minutes').format(DATETIME_FORMAT);
+    } else if (isWeekWithShifts) {
+      newStart = localeDayjs(new Date(eventItem.start)).add(count * 24 / config.shiftCount, 'hours').format(DATETIME_FORMAT);
+    } else {
+      newStart = localeDayjs(new Date(eventItem.start)).add(count, 'days').format(DATETIME_FORMAT);
+    }
 
     newStart = await stopDragHelper({
       count,
@@ -197,6 +211,7 @@ class EventItem extends Component {
       localeDayjs,
       dragType: 'start',
       value: newStart,
+      viewType: viewType
     });
 
     let hasConflict = false;
@@ -296,7 +311,7 @@ class EventItem extends Component {
     } else {
       clientX = ev.clientX;
     }
-    const { headers, cellUnit, events, config, localeDayjs } = schedulerData;
+    const { headers, cellUnit, events, config, localeDayjs, viewType } = schedulerData;
 
     const cellWidth = schedulerData.getContentCellWidth();
     const offset = leftIndex > 0 ? 5 : 6;
@@ -316,9 +331,17 @@ class EventItem extends Component {
     let count = (sign < 0 ? Math.floor(Math.abs(deltaX) / cellWidth) : Math.ceil(Math.abs(deltaX) / cellWidth)) * sign;
     if (newWidth < minWidth) count = leftIndex - rightIndex + 1;
     else if (newWidth > maxWidth) count = headers.length - rightIndex;
-    let newEnd = localeDayjs(new Date(eventItem.end))
-      .add(cellUnit === CellUnit.Hour ? count * config.minuteStep : count, cellUnit === CellUnit.Hour ? 'minutes' : 'days')
-      .format(DATETIME_FORMAT);
+    // let newEnd = localeDayjs(new Date(eventItem.end))
+    //   .add(cellUnit === CellUnit.Hour ? count * config.minuteStep : count, cellUnit === CellUnit.Hour ? 'minutes' : 'days').format(DATETIME_FORMAT);
+    let newEnd;
+    const isWeekWithShifts = viewType === ViewType.Week && config.shiftCount > 1;
+    if (cellUnit === CellUnit.Hour) {
+      newEnd = localeDayjs(new Date(eventItem.end)).add(count * config.minuteStep, 'minutes').format(DATETIME_FORMAT);
+    } else if (isWeekWithShifts) {
+      newEnd = localeDayjs(new Date(eventItem.end)).add(count * 24 / config.shiftCount, 'hours').format(DATETIME_FORMAT);
+    } else {
+      newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').format(DATETIME_FORMAT);
+    }
     newEnd = await stopDragHelper({
       dragType: 'end',
       cellUnit,
@@ -327,6 +350,7 @@ class EventItem extends Component {
       value: newEnd,
       eventItem,
       localeDayjs,
+      viewType: viewType
     });
 
     let hasConflict = false;

@@ -1,58 +1,33 @@
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React from 'react';
+import React, { createElement } from 'react';
 import PropTypes from 'prop-types';
-import { ViewType } from '../config/default';
 
 function BodyView({ schedulerData }) {
-  const { renderData, headers, config, behaviors, viewType } = schedulerData;
-  const fullWidth = schedulerData.getContentCellWidth();
+  const { renderData, headers, config, behaviors } = schedulerData;
+  const width = schedulerData.getContentCellWidth();
 
-  const subCellsPerHeader = viewType === ViewType.Week ? config.shiftCount : 1;
-  const widthPerSubCell = fullWidth / subCellsPerHeader;
-
-  const tableRows = renderData
-    .filter((o) => o.render).map(({ slotId, groupOnly, rowHeight }) => {
-      const rowCells = [];
-
-      headers.forEach((header) => {
-        for (let i = 0; i < subCellsPerHeader; i++) {
-          let headerTime = header.time;
-          if (viewType === ViewType.Week) {
-            const slot = config.shiftSlots[i];
-            const startTime = `${slot.start}:00`;
-            headerTime = headerTime.replace('00:00:00', startTime);
-          }
-          const key = `${slotId}_${headerTime}_${i}`;
-          const style = {
-            width: widthPerSubCell,
-            border: '1px solid #e9e9e9',
-            boxSizing: 'border-box',
-            textAlign: 'center',
-          };
-
-          if (header.nonWorkingTime) {
-            style.backgroundColor = config.nonWorkingTimeBodyBgColor;
-          }
-          if (groupOnly) {
-            style.backgroundColor = config.groupOnlySlotColor;
-          }
-          if (behaviors.getNonAgendaViewBodyCellBgColorFunc) {
-            const cellBgColor = behaviors.getNonAgendaViewBodyCellBgColorFunc(
-              schedulerData,
-              slotId,
-              header
-            );
-            if (cellBgColor) {
-              style.backgroundColor = cellBgColor;
-            }
-          }
-
-          rowCells.push(
-            <td key={key} id={key} style={style}>
-              <div />
-            </td>
-          );
+  const tableRows = renderData.filter(o => o.render)
+    .map(({ slotId, groupOnly, rowHeight }) => {
+      const rowCells = headers.map((header, index) => {
+        const key = `${slotId}_${header.time}`;
+        const style = index === headers.length - 1 ? {} : { width };
+        if (header.nonWorkingTime) {
+          style.backgroundColor = config.nonWorkingTimeBodyBgColor;
         }
+        if (groupOnly) {
+          style.backgroundColor = config.groupOnlySlotColor;
+        }
+        if (behaviors.getNonAgendaViewBodyCellBgColorFunc) {
+          const cellBgColor = behaviors.getNonAgendaViewBodyCellBgColorFunc(schedulerData, slotId, header);
+          if (cellBgColor) {
+            style.backgroundColor = cellBgColor;
+          }
+        }
+        return (
+          <td key={key} style={style}>
+            <div />
+          </td>
+        );
       });
 
       return (

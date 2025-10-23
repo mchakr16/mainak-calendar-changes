@@ -2,7 +2,7 @@ import { LeftOutlined, RightOutlined, ZoomInOutlined, ZoomOutOutlined, Fullscree
 import { Button, Calendar, Col, Popover, Radio, Row, Space, Spin } from 'antd';
 import dayjs from 'dayjs';
 import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import React, { useState, createElement } from 'react';
 import { DATE_FORMAT } from '../config/default';
 
 const RadioButton = Radio.Button;
@@ -29,6 +29,7 @@ const SchedulerHeader = React.forwardRef(({
   const [settingsVisible, setSettingsVisible] = useState(false);
 
   const { viewType, showAgenda, isEventPerspective, config } = schedulerData;
+
   const dateLabel = schedulerData.getDateLabel();
   const selectDate = schedulerData.getSelectedDate();
   const calendarLocale = schedulerData.getCalendarPopoverLocale()?.default?.Calendar;
@@ -63,29 +64,47 @@ const SchedulerHeader = React.forwardRef(({
     }
   };
 
+  // Calendar button
+  const [tempDate, setTempDate] = useState(dayjs(selectDate));
+  const [appliedDate, setAppliedDate] = useState(null);
+
+  // Apply Setting As per Config provided in sheduler instance
+  const buttonConfig = config.calenderConfig ?? {};
+  const applyButtonText = buttonConfig.applyButtonText?.trim() || 'Apply';
+  const applyButtonType = buttonConfig.applyButtonType?.trim() || 'primary';
+  const applyButtonAlignment = buttonConfig.applyButtonAlignment?.trim() || 'center';
+
+  const handleDateSelect = (date) => {
+    setTempDate(date);
+  };
+
+  const handleApply = () => {
+    setVisible(false);
+    setAppliedDate(tempDate);
+    handleEvents(onSelectDate, false, tempDate.format(DATE_FORMAT));
+  };
+
   const popover = (
     <div className="popover-calendar">
       <Calendar
         locale={calendarLocale}
         defaultValue={dayjs(selectDate)}
         fullscreen={false}
-        onSelect={date => {
-          setVisible(false);
-          handleEvents(onSelectDate, false, date.format(DATE_FORMAT));
-        }}
+        onSelect={handleDateSelect}
       />
+      <div style={{
+        display: 'flex', borderTop: '0.5px solid rgb(210, 207, 207)',
+        paddingTop: '10px', justifyContent: `${applyButtonAlignment}`
+      }}>
+        <Button type={applyButtonType} onClick={handleApply} >
+          {applyButtonText}
+        </Button>
+      </div>
     </div>
   );
 
   const settings = (
     <div>
-      <div className="toggle-container">
-        <span className="toggle-text">Display Weekend: </span>
-        <label className="toggle-switch">
-          <input type="checkbox" checked={isToggleChecked} onChange={event => handleToggle(event)} />
-          <span className="slider"></span>
-        </label>
-      </div>
       <div style={{ padding: '10px 0px' }}>
         <span style={{ fontFamily: 'sans-serif' }}>Number of Shifts: </span>
         <span style={{ paddingLeft: '12px' }}>
@@ -98,24 +117,24 @@ const SchedulerHeader = React.forwardRef(({
         <div style={{ padding: '10px 0px', borderTop: '1px solid #e9e9e9' }}>
           <div style={{ fontFamily: 'sans-serif', marginBottom: '8px' }}>Zoom Controls:</div>
           <Space>
-            <Button 
-              size="small" 
-              icon={<ZoomOutOutlined />} 
+            <Button
+              size="small"
+              icon={<ZoomOutOutlined />}
               onClick={() => handleEvents(onZoomOut, false)}
               disabled={!schedulerData.canZoomOut()}
               title="Zoom Out"
             />
-            <Button 
-              size="small" 
-              icon={<FullscreenOutlined />} 
+            <Button
+              size="small"
+              icon={<FullscreenOutlined />}
               onClick={() => handleEvents(onResetZoom, false)}
               title="Fit to Screen"
             >
               {Math.round(schedulerData.getZoomLevel() * 100)}%
             </Button>
-            <Button 
-              size="small" 
-              icon={<ZoomInOutlined />} 
+            <Button
+              size="small"
+              icon={<ZoomInOutlined />}
               onClick={() => handleEvents(onZoomIn, false)}
               disabled={!schedulerData.canZoomIn()}
               title="Zoom In"
@@ -178,19 +197,18 @@ const SchedulerHeader = React.forwardRef(({
             </div>
             <Spin spinning={dateSpinning} />
           </Space>
+          <Space>
+            <Popover
+              content={settings}
+              placement="bottomLeft"
+              trigger="click"
+              title="Settings"
+              open={settingsVisible}
+              onOpenChange={handleSettingsOpenChange}>
+              <Button type="primary">Settings</Button>
+            </Popover>
+          </Space>
         </div>
-      </Col>
-      <Col>
-        <Popover
-                  content={settings}
-                  placement="bottomLeft"
-                  trigger="click"
-                  title="Settings"
-                  open={settingsVisible}
-                  onOpenChange={handleSettingsOpenChange}
-                >
-                  <Button type="primary">Settings</Button>
-                </Popover>
       </Col>
       <Col>
         <Space>
@@ -199,10 +217,18 @@ const SchedulerHeader = React.forwardRef(({
             buttonStyle="solid"
             defaultValue={defaultValue}
             size="default"
-            onChange={event => handleEvents(onViewChange, true, event)}
-          >
+            onChange={event => handleEvents(onViewChange, true, event)} >
             {radioButtonList}
           </RadioGroup>
+        </Space>
+        <Space>
+          <div className="toggle-container">
+            <label className="toggle-text">Holidays:</label>
+            <label className="toggle-switch">
+              <input type="checkbox" checked={isToggleChecked} onChange={event => handleToggle(event)} />
+              <span className="slider"></span>
+            </label>
+          </div>
         </Space>
       </Col>
       {rightCustomHeader}

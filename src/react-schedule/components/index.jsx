@@ -1,6 +1,6 @@
 /* eslint-disable consistent-return */
 import PropTypes from 'prop-types';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, createElement } from 'react';
 import { CellUnit, DATETIME_FORMAT, DATE_FORMAT, SummaryPos, ViewType } from '../config/default';
 import AddMorePopover from './AddMorePopover';
 import AgendaView from './AgendaView';
@@ -369,7 +369,7 @@ function Scheduler(props) {
     const contentPaddingBottom = contentScrollbarHeight === 0 ? resourceScrollbarHeight : 0;
 
     let schedulerContentStyle = {
-      overflowX: viewType === ViewType.Week ? 'hidden' : 'auto',
+      overflowX: viewType === ViewType.Week || viewType === ViewType.Custom ? 'hidden' : 'auto',
       overflowY: 'auto',
       margin: '0px',
       position: 'relative',
@@ -441,8 +441,8 @@ function Scheduler(props) {
         <td>
           <div className="scheduler-view" style={{ width: schedulerContainerWidth, verticalAlign: 'top' }}>
             <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
-              <div
-                style={{ overflowX: 'scroll', overflowY: 'hidden', margin: `0px 0px -${contentScrollbarHeight}px` }}
+
+              <div style={{ overflowX: 'scroll', overflowY: 'hidden', margin: `0px 0px -${contentScrollbarHeight}px` }}
                 ref={schedulerHeadRef}
                 onMouseOver={onSchedulerHeadMouseOver}
                 onFocus={onSchedulerHeadMouseOver}
@@ -512,7 +512,7 @@ function Scheduler(props) {
     <table id="RBS-Scheduler-root" className="react-big-schedule" style={{ width: `${width}px` }}>
       <thead>
         <tr>
-          <td colSpan="3">{schedulerHeader}</td>
+          <td colSpan="2">{schedulerHeader}</td>
         </tr>
       </thead>
       <tbody>{tbodyContent}</tbody>

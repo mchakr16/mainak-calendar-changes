@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, { createElement } from 'react';
 
 function SelectedArea({ left, width, schedulerData }) {
   const { config } = schedulerData;
