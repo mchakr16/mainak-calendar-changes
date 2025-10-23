@@ -112,7 +112,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
 
       const headerKey = item.id ? `header-${item.id}` : `header-${item.time}-${index}`;
       return (
-        <td key={headerKey} className="header3-text" style={style}>{pList}</td>
+        <td key={headerKey} className="header3-text" style={{
+          ...style,
+          width: cellWidth
+        }}>{pList}</td>
       );
     });
   }
@@ -138,7 +141,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
     });
 
     const monthHeaders = Object.values(monthMap).map((month, index) => (
-      <td key={`month-${index}`} colSpan={month.count} style={{ textAlign: 'center' }}>
+      <td key={`month-${index}`} colSpan={month.count} style={{ 
+        textAlign: 'center',
+        width: cellWidth * month.count
+      }}>
         {month.monthName}
       </td>
     ));
@@ -164,7 +170,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
     });
 
     const yearHeaders = Object.values(yearMap).map((yearItem, index) => (
-      <td key={`year-${index}`} colSpan={yearItem.count} style={{ textAlign: 'center' }}>
+      <td key={`year-${index}`} colSpan={yearItem.count} style={{ 
+        textAlign: 'center',
+        width: cellWidth * yearItem.count
+      }}>
         {yearItem.year}
       </td>
     ));
@@ -207,7 +216,9 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
             const weekNumber = weekKey.split('-W')[1];
             const colspan = viewType == ViewType.Week ? headers.length : group.length;
             return (
-              <td key={`week-${weekKey}`} colSpan={colspan}> Week {weekNumber}</td>
+              <td key={`week-${weekKey}`} colSpan={colspan} style={{
+                width: cellWidth * colspan
+              }}> Week {weekNumber}</td>
             );
           });
 

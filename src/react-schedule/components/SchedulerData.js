@@ -385,6 +385,11 @@ export default class SchedulerData {
     const contentCellConfigWidth = this.getContentCellConfigWidth();
     const schedulerWidth = this.getSchedulerWidth();
 
+    if (this.viewType === ViewType.Day) {
+      const weekViewWidth = 7 * (this.config.shiftCount || 1) * (this.config.weekCellWidth || 45);
+      return this.headers.length > 0 ? Math.floor(weekViewWidth / this.headers.length) : (this.config.weekCellWidth || 45);
+    }
+
     const baseCellWidth = this.isContentViewResponsive() ?
       parseInt((schedulerWidth * Number(contentCellConfigWidth.slice(0, -1))) / 100, 10) :
       contentCellConfigWidth;
@@ -392,18 +397,13 @@ export default class SchedulerData {
     let cellWidth = baseCellWidth;
 
     if (this.cellUnit === CellUnit.Day && !this.config.displayWeekend && this.viewType === ViewType.Week) {
-      const start = this.localeDayjs(new Date(this.startDate));
-      const end = this.localeDayjs(new Date(this.endDate));
-      let fullWeekDays = 0;
-      let header = start;
-
-      while (header >= start && header <= end) {
-        fullWeekDays++;
-        header = header.add(1, 'days');
-      }
-
-      if (this.headers.length > 0 && fullWeekDays > this.headers.length) {
-        cellWidth = cellWidth * (fullWeekDays / this.headers.length);
+      const fullWeekDays = 7;
+      const shiftMultiplier = this.config.shiftCount || 1;
+      const fullWeekColumns = fullWeekDays * shiftMultiplier;
+      const visibleColumns = this.headers.length; // actual visible columns (without weekends)
+      
+      if (visibleColumns > 0 && fullWeekColumns > visibleColumns) {
+        cellWidth = cellWidth * (fullWeekColumns / visibleColumns);
       }
     }
 
@@ -411,7 +411,7 @@ export default class SchedulerData {
       const originalCellWidth = cellWidth;
       cellWidth = cellWidth * this.config.zoomLevel;
 
-      if (this.config.zoomLevel < 1.0 && this.headers.length > 0) {
+      if (this.config.zoomLevel < 1.0 && this.headers.length > 0 && this.viewType !== ViewType.Year) {
         const zoomedTableWidth = this.headers.length * cellWidth;
 
         const resourceTableConfigWidth = this.getResourceTableConfigWidth();

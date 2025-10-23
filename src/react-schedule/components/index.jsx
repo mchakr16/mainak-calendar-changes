@@ -355,7 +355,24 @@ function Scheduler(props) {
   } else {
     const resourceTableWidth = schedulerData.getResourceTableWidth();
     const schedulerContainerWidth = width - (config.resourceViewEnabled ? resourceTableWidth : 0);
-    const schedulerWidth = schedulerData.getContentTableWidth() - 1;
+    const calculatedSchedulerWidth = schedulerData.getContentTableWidth() - 1;
+    
+    const schedulerWidth = calculatedSchedulerWidth;
+    
+    const weekViewWidth = (schedulerData.viewType === ViewType.Day || schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Quarter) ? 
+      (7 * (schedulerData.config.shiftCount || 1) * (schedulerData.config.weekCellWidth || 45)) :
+      schedulerWidth;
+      
+    let monthViewWidth = schedulerWidth;
+    if (schedulerData.viewType === ViewType.Month) {
+      const weekdaysHeaders = schedulerData.config.displayWeekend ? 
+        Math.floor(schedulerData.headers.length * (5/7)) : // 5 out of 7 days if weekends shown
+        schedulerData.headers.length;
+      monthViewWidth = weekdaysHeaders * schedulerData.getContentCellWidth();
+    }
+    
+    const tableWidth = schedulerWidth;
+      
     const DndResourceEvents = state.dndContext.getDropTarget(config.dragAndDropEnabled);
     const eventDndSource = state.dndContext.getDndSource();
 
@@ -439,7 +456,14 @@ function Scheduler(props) {
           </div>
         </td>
         <td>
-          <div className="scheduler-view" style={{ width: schedulerContainerWidth, verticalAlign: 'top' }}>
+          <div className="scheduler-view" style={{ 
+            width: schedulerData.viewType === ViewType.Month
+              ? Math.max(schedulerContainerWidth, monthViewWidth)
+              : (schedulerData.viewType === ViewType.Day || schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Quarter)
+                ? Math.max(schedulerContainerWidth, weekViewWidth)
+                : Math.max(schedulerContainerWidth, schedulerWidth), 
+            verticalAlign: 'top' 
+          }}>
             <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
 
               <div style={{ overflowX: 'scroll', overflowY: 'hidden', margin: `0px 0px -${contentScrollbarHeight}px` }}
@@ -451,8 +475,11 @@ function Scheduler(props) {
                 onScroll={onSchedulerHeadScroll}
                 aria-label="Scheduler Header"
               >
-                <div style={{ paddingRight: `${contentScrollbarWidth}px`, width: schedulerWidth + contentScrollbarWidth }}>
-                  <table className="scheduler-bg-table">
+                <div style={{ paddingRight: `${contentScrollbarWidth}px`, width: tableWidth + contentScrollbarWidth }}>
+                  <table className="scheduler-bg-table" style={{ 
+                    width: tableWidth,
+                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month) ? 'fixed' : 'auto'
+                  }}>
                     <HeaderView {...props} />
                   </table>
                 </div>
@@ -467,14 +494,17 @@ function Scheduler(props) {
               onBlur={onSchedulerContentMouseOut}
               onScroll={onSchedulerContentScroll}
             >
-              <div style={{ width: schedulerWidth }}>
+              <div style={{ width: tableWidth }}>
                 <div className="scheduler-content">
                   <table className="scheduler-content-table">
                     <tbody>{resourceEventsList}</tbody>
                   </table>
                 </div>
                 <div className="scheduler-bg">
-                  <table className="scheduler-bg-table" style={{ width: schedulerWidth }} ref={schedulerContentBgTableRef}>
+                  <table className="scheduler-bg-table" style={{ 
+                    width: tableWidth,
+                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month) ? 'fixed' : 'auto'
+                  }} ref={schedulerContentBgTableRef}>
                     <BodyView {...props} />
                   </table>
                 </div>
