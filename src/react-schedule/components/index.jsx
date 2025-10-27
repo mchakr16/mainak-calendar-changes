@@ -359,9 +359,16 @@ function Scheduler(props) {
     
     const schedulerWidth = calculatedSchedulerWidth;
     
+    let tableWidth = schedulerWidth;
+    if (schedulerData.viewType === ViewType.Week) {
+      const cellWidth = schedulerData.getContentCellWidth();
+      const numCells = schedulerData.headers.length;
+      tableWidth = cellWidth * numCells;
+    }
+    
     const weekViewWidth = (schedulerData.viewType === ViewType.Day || schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Quarter) ? 
-      (7 * (schedulerData.config.shiftCount || 1) * (schedulerData.config.weekCellWidth || 45)) :
-      schedulerWidth;
+      (7 * (schedulerData.config.shiftCount || 1) * 45) : 
+      tableWidth;
       
     let monthViewWidth = schedulerWidth;
     if (schedulerData.viewType === ViewType.Month) {
@@ -370,8 +377,6 @@ function Scheduler(props) {
         schedulerData.headers.length;
       monthViewWidth = weekdaysHeaders * schedulerData.getContentCellWidth();
     }
-    
-    const tableWidth = schedulerWidth;
       
     const DndResourceEvents = state.dndContext.getDropTarget(config.dragAndDropEnabled);
     const eventDndSource = state.dndContext.getDndSource();
@@ -478,7 +483,9 @@ function Scheduler(props) {
                 <div style={{ paddingRight: `${contentScrollbarWidth}px`, width: tableWidth + contentScrollbarWidth }}>
                   <table className="scheduler-bg-table" style={{ 
                     width: tableWidth,
-                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month) ? 'fixed' : 'auto'
+                    minWidth: tableWidth,
+                    maxWidth: tableWidth,
+                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
                   }}>
                     <HeaderView {...props} />
                   </table>
@@ -503,7 +510,9 @@ function Scheduler(props) {
                 <div className="scheduler-bg">
                   <table className="scheduler-bg-table" style={{ 
                     width: tableWidth,
-                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month) ? 'fixed' : 'auto'
+                    minWidth: tableWidth,
+                    maxWidth: tableWidth,
+                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
                   }} ref={schedulerContentBgTableRef}>
                     <BodyView {...props} />
                   </table>

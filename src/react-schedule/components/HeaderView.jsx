@@ -79,9 +79,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
       } : { width: cellWidth };
       if (index === headers.length - 1)
         style = item.nonWorkingTime ? {
+          width: cellWidth,
           color: config.nonWorkingTimeHeadColor,
           backgroundColor: config.nonWorkingTimeHeadBgColor,
-        } : {};
+        } : { width: cellWidth };
       const cellFormat =
         cellUnit === CellUnit.Week
           ? config.nonAgendaWeekCellHeaderFormat

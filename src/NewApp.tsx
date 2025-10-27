@@ -98,7 +98,7 @@ const NewApp = () => {
                 nonAgendaSlotMinHeight: 50,
                 displayWeekend: false,
                 customCellWidth: 35,
-                weekCellWidth: 45,
+                weekCellWidth: '12%',
                 monthCellWidth: 40,
                 quarterCellWidth: 75,
                 defaultExpanded: false,

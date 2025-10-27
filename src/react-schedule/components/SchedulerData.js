@@ -386,8 +386,22 @@ export default class SchedulerData {
     const schedulerWidth = this.getSchedulerWidth();
 
     if (this.viewType === ViewType.Day) {
-      const weekViewWidth = 7 * (this.config.shiftCount || 1) * (this.config.weekCellWidth || 45);
-      return this.headers.length > 0 ? Math.floor(weekViewWidth / this.headers.length) : (this.config.weekCellWidth || 45);
+      const baseWeekCellWidth = 45;
+      const weekViewWidth = 7 * (this.config.shiftCount || 1) * baseWeekCellWidth;
+      return this.headers.length > 0 ? Math.floor(weekViewWidth / this.headers.length) : baseWeekCellWidth;
+    }
+
+    if (this.viewType === ViewType.Week && this.isContentViewResponsive()) {
+      const resourceTableWidth = this.config.resourceViewEnabled ? 160 : 0;
+      const contentScrollbarWidth = 17;
+      const availableWidth = schedulerWidth - resourceTableWidth - contentScrollbarWidth;
+      const totalColumns = this.headers.length;
+      
+      if (totalColumns > 0) {
+        const exactCellWidth = availableWidth / totalColumns;
+        const finalCellWidth = Math.floor(exactCellWidth);
+        return finalCellWidth;
+      }
     }
 
     const baseCellWidth = this.isContentViewResponsive() ?
@@ -395,6 +409,10 @@ export default class SchedulerData {
       contentCellConfigWidth;
 
     let cellWidth = baseCellWidth;
+
+    if (this.viewType === ViewType.Week && !this.isContentViewResponsive()) {
+      cellWidth = baseCellWidth;
+    }
 
     if (this.cellUnit === CellUnit.Day && !this.config.displayWeekend && this.viewType === ViewType.Week) {
       const fullWeekDays = 7;
@@ -655,8 +673,9 @@ export default class SchedulerData {
     };
 
     const configProperty = viewConfigMap[this.viewType] || 'customCellWidth';
+    const configValue = this.config[configProperty];
 
-    return this.config[configProperty];
+    return configValue;
   }
 
   _setDocumentWidth(documentWidth) {

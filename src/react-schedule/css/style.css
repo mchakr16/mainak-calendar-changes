@@ -353,9 +353,13 @@
 }
 
 .react-big-schedule table.scheduler-table,
-.react-big-schedule table.scheduler-bg-table,
 .react-big-schedule table.scheduler-content-table {
   table-layout: auto;
+  min-width: 100%;
+  width: auto;
+}
+
+.react-big-schedule table.scheduler-bg-table {
   min-width: 100%;
   width: auto;
 }

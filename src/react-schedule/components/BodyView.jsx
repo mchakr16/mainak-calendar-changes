@@ -10,7 +10,7 @@ function BodyView({ schedulerData }) {
     .map(({ slotId, groupOnly, rowHeight }) => {
       const rowCells = headers.map((header, index) => {
         const key = `${slotId}_${header.time}`;
-        const style = index === headers.length - 1 ? {} : { width };
+        const style = { width };
         if (header.nonWorkingTime) {
           style.backgroundColor = config.nonWorkingTimeBodyBgColor;
         }
