@@ -59,6 +59,11 @@ export default {
   summaryPos: SummaryPos.TopRight,
   groupOnlySlotColor: '#F8F8F8',
 
+  // Shift slot bg color
+  shiftOneBgColor: '#f1fef5ff',
+  shiftTwoBgColor: '#ffffe8ff',
+  shiftThirdBgColor: '#f2f9fcff',
+
   startResizable: true,
   endResizable: true,
   movable: true,

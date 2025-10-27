@@ -211,7 +211,7 @@ const SchedulerHeader = React.forwardRef(({
         </div>
       </Col>
       <Col>
-        <Space>
+        <Space >
           <Spin spinning={viewSpinning} />
           <RadioGroup
             buttonStyle="solid"
@@ -223,7 +223,7 @@ const SchedulerHeader = React.forwardRef(({
         </Space>
         <Space>
           <div className="toggle-container">
-            <label className="toggle-text">Holidays:</label>
+            <label className="toggle-text">Weekend:</label>
             <label className="toggle-switch">
               <input type="checkbox" checked={isToggleChecked} onChange={event => handleToggle(event)} />
               <span className="slider"></span>

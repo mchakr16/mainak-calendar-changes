@@ -1,11 +1,11 @@
-
+import { Col, Row } from 'antd';
 import { useEffect, useRef, useState, useReducer } from "react";
 import { Scheduler, SchedulerData, ViewType, CellUnit, DATE_FORMAT } from "./react-schedule/index";
 import EventItem from './react-schedule/components/EventItem';
 // import { HTML5Backend } from 'react-dnd-html5-backend'
 // import { DndProvider } from 'react-dnd'
 import dayjs from "dayjs";
-import './index.css';
+// import './index.css';
 import './react-schedule/css/style.css'
 // import { ObjectItem, ValueStatus } from "mendix";
 // import { ReactPlannerContainerProps } from "typings/ReactPlannerProps";
@@ -24,20 +24,6 @@ dayjs.extend(localeData);
 dayjs.locale('en-gb');
 dayjs.extend(isoWeek);
 
-interface Resource {
-    id: string;
-    name: string;
-    parentId?: string;
-}
-
-//Default resource list
-const resourceList: any = [
-    { id: 'r0', name: 'Resource0' },
-    { id: 'r1', name: 'Resource1' },
-    { id: 'r2', name: 'Resource2', parentId: 'r0' },
-    { id: 'r3', name: 'Resource3', parentId: 'r4' },
-    { id: 'r4', name: 'Resource4', parentId: 'r2' },
-];
 
 //Default event list
 const eventList: any = [
@@ -98,22 +84,6 @@ const eventList: any = [
 
 const defaultEventColor = "#ccc"
 
-/**
- * Waits until the Scheduler DOM element exists and has a non-zero width, then calls the callback.
- * Used to ensure measurements are only taken when the Scheduler is fully rendered and sized.
- */
-function waitForSchedulerWidth(cb: () => void) {
-    function check() {
-        const el = document.getElementById('RBS-Scheduler-root');
-        if (el && el.offsetWidth > 0) {
-            cb();
-        } else {
-            requestAnimationFrame(check);
-        }
-    }
-    check();
-}
-
 const initialState = {
     showScheduler: false,
     viewModel: {},
@@ -152,6 +122,7 @@ const generateShiftSlots = (shiftCount, dayStartFrom) => {
     return slots;
 }
 
+
 let schedulerData: any;
 
 const ReactPlanner = (props: any) => {
@@ -162,42 +133,38 @@ const ReactPlanner = (props: any) => {
 
     // State and refs for events, resources, update flag, planner width, and resize timeout
     const [events, setEvents] = useState<EventItem[]>(eventList);
-    // const [resources, setResources] = useState<Resource[]>(resourceList);
-    // const [updateFlag, setUpdateFlag] = useState(0);
+
     const plannerRef = useRef<HTMLDivElement>(null);
-    const [plannerWidth, setPlannerWidth] = useState<number>(0);
-    // const resizeTimeout = useRef<NodeJS.Timeout | null>(null);
 
     const [state, dispatch] = useReducer(reducer, initialState);
-
-    const savedDate = sessionStorage.getItem('selectedSchedulerDate');
-    const initialDate = savedDate || dayjs().format(DATE_FORMAT);
-
-    const dayStartFrom = 7; // update dayStartFrom props
+    const dayStartFrom = props.dayStartFrom || 6; // update dayStartFrom props
     const SHIFT_COUNT = 3; // update shift count
     const generatedSlots = generateShiftSlots(SHIFT_COUNT, dayStartFrom);
 
     useEffect(() => {
         schedulerData = new SchedulerData(
-            initialDate,
+            dayjs().format(DATE_FORMAT),
             ViewType.Week,
             false,
             false,
             {
-                schedulerWidth: '100%',
+                schedulerWidth: '95%',
                 minuteStep: 60,
-                schedulerMaxHeight: 500,
+                schedulerMaxHeight: 400,
                 dayResourceTableWidth: 150,
                 weekResourceTableWidth: 160,
                 customResourceTableWidth: 150,
+                quarterResourceTableWidth: 150,
+                monthResourceTableWidth: 150,
                 tableHeaderHeight: 120,
                 eventItemHeight: 36,
                 eventItemLineHeight: 38,
                 nonAgendaSlotMinHeight: 50,
-                customCellWidth: 40,
-                displayWeekend: false,
-                weekCellWidth: 65,
-                defaultExpanded: true,
+                displayWeekend: props.showWeekends || false,
+                weekCellWidth: '12%',
+                monthCellWidth: 40,
+                quarterCellWidth: 75,
+                defaultExpanded: false,
                 calenderConfig: {
                     applyButtonText: 'Apply',
                     applyButtonType: 'primary',
@@ -224,6 +191,7 @@ const ReactPlanner = (props: any) => {
                         showAgenda: false,
                         isEventPerspective: false,
                     },
+                    { viewName: 'Quarter', viewType: ViewType.Quarter, showAgenda: false, isEventPerspective: false },
                     {
                         viewName: 'Year',
                         viewType: ViewType.Year,
@@ -251,8 +219,8 @@ const ReactPlanner = (props: any) => {
         );
 
         schedulerData.localeDayjs.locale('en-gb');
-        schedulerData.setResources(DemoData.resources);
-        schedulerData.setEvents(eventList);
+        // schedulerData.setResources(DemoData.resources);
+        // schedulerData.setEvents(eventList);
 
         dispatch({ type: 'INITIALIZE', payload: schedulerData });
     }, []);
@@ -297,71 +265,6 @@ const ReactPlanner = (props: any) => {
         props.viewEnd?.setValue(end.toDate());
     }
 
-    /**
-     * Updates the scheduler's documentWidth property and triggers a re-render.
-     * Also accounts for the right margin of the scheduler root element.
-     */
-    const updateSchedulerWidth = () => {
-        let schedulerItem = document.getElementById('RBS-Scheduler-root');
-        let rightMargin: string | number = 0;
-        if (schedulerItem) {
-            rightMargin = window.getComputedStyle(schedulerItem).marginRight;
-            rightMargin = parseInt(rightMargin.substring(0, rightMargin.length - 2));
-        }
-        schedulerData.documentWidth = schedulerData.documentWidth + (isNaN(rightMargin as number) ? 0 : (rightMargin as number));
-        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
-    };
-
-    /**
-     * Updates the plannerWidth state with the current width of the planner container.
-     */
-    const updateWidth = () => {
-        if (plannerRef.current) {
-            setPlannerWidth(plannerRef.current.offsetWidth);
-        }
-    };
-
-    // Effect: Debounced window resize handler, updates width 200ms after resize stops
-    // useEffect(() => {
-    //   const handleResize = () => {
-    //     if (resizeTimeout.current) clearTimeout(resizeTimeout.current);
-    //     resizeTimeout.current = setTimeout(() => {
-    //       updateWidth();
-    //     }, 200);
-    //   };
-
-    //   updateWidth();
-    //   window.addEventListener('resize', handleResize);
-    //   return () => {
-    //     window.removeEventListener('resize', handleResize);
-    //     if (resizeTimeout.current) clearTimeout(resizeTimeout.current);
-    //   };
-    // }, []);
-
-    // Effect: Wait for Scheduler DOM to be rendered and sized, then update width
-    useEffect(() => {
-        // If already present and has width, update immediately
-        const el = document.getElementById('RBS-Scheduler-root');
-        if (el && el.offsetWidth > 0) {
-            updateWidth();
-            return;
-        }
-        waitForSchedulerWidth(updateWidth);
-    }, []);
-
-    // Effect: Update scheduler width when plannerWidth or schedulerData changes
-    useEffect(() => {
-        let animationFrame: number | null = null;
-        if (plannerWidth > 0) {
-            animationFrame = window.requestAnimationFrame(updateSchedulerWidth);
-        } else {
-            updateSchedulerWidth();
-        }
-        return () => {
-            if (animationFrame) window.cancelAnimationFrame(animationFrame);
-        };
-    }, [plannerWidth, schedulerData]);
-
     // Effect: Update events from Mendix data when eventData changes
     useEffect(() => {
         const newEventList: EventItem[] = [];
@@ -377,7 +280,8 @@ const ReactPlanner = (props: any) => {
                 item: item
             });
         });
-        setEvents(eventList);
+        setEvents(DemoData.events);
+        schedulerData.setEvents(DemoData.events);
         if (props.eventSelection && newEventList.length > 0) {
             const firstEvent = newEventList[0];
             props.eventSelection.setSelection(firstEvent.item);
@@ -442,7 +346,7 @@ const ReactPlanner = (props: any) => {
         schedulerData.setDate(date);
         updateViewStartEnd(schedulerData)
         // props.eventData.reload();
-        schedulerData.setEvents(eventList);
+        schedulerData.setEvents(events);
         sessionStorage.setItem('selectedSchedulerDate', date);
         // forceUpdateSchedulerData(schedulerData);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
@@ -454,10 +358,10 @@ const ReactPlanner = (props: any) => {
      */
     const onViewChange = (_schedulerData: SchedulerData, view: any) => {
         schedulerData.setViewType(view.viewType);
-        updateSchedulerWidth();
+        // updateSchedulerWidth();
         updateViewStartEnd(schedulerData)
         // props.eventData.reload();
-        schedulerData.setEvents(eventList);
+        schedulerData.setEvents(events);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
@@ -488,11 +392,6 @@ const ReactPlanner = (props: any) => {
     //   || !props.resourceData || props.resourceData.status !== ValueStatus.Available) {
     //   return <div />
     // }
-
-    // Set events and resources on the schedulerData instance
-    // schedulerData.setEvents(events);
-    // schedulerData.setResources(resources);
-    // console.debug(`Update flag: ${updateFlag}, plannerWidth: ${plannerWidth}`);
 
     const moveEvent = (schedulerData: SchedulerData, event: EventItem, slotId: string, slotName: string, start: string, end: string) => {
         try {
@@ -559,28 +458,50 @@ const ReactPlanner = (props: any) => {
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
+    const onToggleChange = (schedulerData) => {
+        schedulerData.config.displayWeekend = !schedulerData.config.displayWeekend;
+        schedulerData.setViewAfterSettingsUpdate();
+
+        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+    };
+
+    const onShiftCountChange = (schedulerData, shiftCount) => {
+        schedulerData.config.shiftCount = Number(shiftCount);
+        schedulerData.config.shiftSlots = generateShiftSlots(shiftCount, dayStartFrom);
+        schedulerData.setViewAfterSettingsUpdate();
+
+        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+    };
+
     // Render the planner and scheduler
     return (
-        <div className="react-planner" ref={plannerRef} >
+        <div ref={plannerRef} >
             {state.showScheduler && (
-                <Scheduler
-                    schedulerData={state.viewModel}
-                    prevClick={prevClick}
-                    nextClick={nextClick}
-                    onSelectDate={onSelectDate}
-                    onViewChange={onViewChange}
-                    eventItemClick={(_schedulerData: SchedulerData<EventItem>, event: any) => {
-                        event.click();
-                    }}
-                    newEvent={(_, slotId, __, start, end) => { onNewEvent(slotId, start, end) }}
-                    eventItemPopoverTemplateResolver={(_schedulerData: SchedulerData, event: any) => {
-                        return (<div>{props.popoverContent?.get(event.item)}</div>);
-                    }}
-                    toggleExpandFunc={toggleExpandFunc}
-                    moveEvent={moveEvent}
-                    updateEventStart={updateEventStart}
-                    updateEventEnd={updateEventEnd}
-                />
+                <Row>
+                    <Col style={{ width: '95%' }}>
+                        <Scheduler
+                            schedulerData={state.viewModel}
+                            prevClick={prevClick}
+                            nextClick={nextClick}
+                            onSelectDate={onSelectDate}
+                            onViewChange={onViewChange}
+                            eventItemClick={(_schedulerData: SchedulerData<EventItem>, event: any) => {
+                                event.click();
+                            }}
+                            newEvent={(_, slotId, __, start, end) => { onNewEvent(slotId, start, end) }}
+                            eventItemPopoverTemplateResolver={(_schedulerData: SchedulerData, event: any) => {
+                                return (<div>{props.popoverContent?.get(event.item)}</div>);
+                            }}
+                            toggleExpandFunc={toggleExpandFunc}
+                            moveEvent={moveEvent}
+
+                            updateEventStart={updateEventStart}
+                            updateEventEnd={updateEventEnd}
+                            onToggleChange={onToggleChange}
+                            onShiftCountChange={onShiftCountChange}
+                        />
+                    </Col>
+                </Row>
             )}
 
         </div>

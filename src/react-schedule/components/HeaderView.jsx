@@ -13,11 +13,22 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
   const fontSize = 12;
   const weekDayCount = config.displayWeekend ? 7 : 5;
 
+  const shiftColors = {
+    0: config.shiftOneBgColor,
+    1: config.shiftTwoBgColor,
+    2: config.shiftThirdBgColor,
+  };
+
   let headerList = [];
   let style;
 
   if (cellUnit === CellUnit.Hour) {
+    const totalObjects = headers.length;
+    const objectsPerShift = Math.ceil(totalObjects / shiftCount);
+
     headers.forEach((item, index) => {
+      item.shiftIndex = Math.floor(index / objectsPerShift);
+
       if (index % minuteStepsInHour === 0) {
         const datetime = localeDayjs(new Date(item.time));
 
@@ -29,6 +40,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
           }
           : {
             width: cellWidth * minuteStepsInHour,
+            backgroundColor: shiftColors[item.shiftIndex]
           };
 
         if (index === headers.length - minuteStepsInHour) {
@@ -37,7 +49,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
               color: config.nonWorkingTimeHeadColor,
               backgroundColor: config.nonWorkingTimeHeadBgColor,
             }
-            : {};
+            : { backgroundColor: shiftColors[item.shiftIndex] };
         }
 
         const pFormattedList = config.nonAgendaDayCellHeaderFormat
@@ -61,7 +73,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
             <td
               key={`header-${item.time}`}
               className="header3-text"
-              style={style}>
+              style={{ ...style, width: cellWidth }} >
               {pList}
             </td>
           );
@@ -76,8 +88,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
         width: cellWidth,
         color: config.nonWorkingTimeHeadColor,
         backgroundColor: config.nonWorkingTimeHeadBgColor,
+      } : viewType === ViewType.Week ? {
+        backgroundColor: shiftColors[item.shiftIndex]
       } : { width: cellWidth };
-      if (index === headers.length - 1)
+      if (index === headers.length - 1 && viewType !== ViewType.Week)
         style = item.nonWorkingTime ? {
           width: cellWidth,
           color: config.nonWorkingTimeHeadColor,
@@ -114,8 +128,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
       const headerKey = item.id ? `header-${item.id}` : `header-${item.time}-${index}`;
       return (
         <td key={headerKey} className="header3-text" style={{
-          ...style,
-          width: cellWidth
+          ...style, width: cellWidth
         }}>{pList}</td>
       );
     });
@@ -142,10 +155,8 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
     });
 
     const monthHeaders = Object.values(monthMap).map((month, index) => (
-      <td key={`month-${index}`} colSpan={month.count} style={{ 
-        textAlign: 'center',
-        width: cellWidth * month.count
-      }}>
+      <td key={`month-${index}`} colSpan={month.count}
+        style={{ textAlign: 'center', width: cellWidth * month.count }}>
         {month.monthName}
       </td>
     ));
@@ -171,17 +182,14 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
     });
 
     const yearHeaders = Object.values(yearMap).map((yearItem, index) => (
-      <td key={`year-${index}`} colSpan={yearItem.count} style={{ 
-        textAlign: 'center',
-        width: cellWidth * yearItem.count
-      }}>
+      <td key={`year-${index}`} colSpan={yearItem.count}
+        style={{ textAlign: 'center', width: cellWidth * yearItem.count }}>
         {yearItem.year}
       </td>
     ));
 
-    return <tr style={{ height: 40 }}>{yearHeaders}</tr>;
+    return <tr style={{ height: 40, fontSize: fontSize }}>{yearHeaders}</tr>;
   };
-
 
   const startDate = new Date(headers[0].time);
 
@@ -217,9 +225,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
             const weekNumber = weekKey.split('-W')[1];
             const colspan = viewType == ViewType.Week ? headers.length : group.length;
             return (
-              <td key={`week-${weekKey}`} colSpan={colspan} style={{
-                width: cellWidth * colspan
-              }}> Week {weekNumber}</td>
+              <td key={`week-${weekKey}`} colSpan={colspan} style={{ width: cellWidth * colspan }}> Week {weekNumber}</td>
             );
           });
 
@@ -230,8 +236,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
 
         return (<>
           {(viewType === ViewType.Month || viewType === ViewType.Quarter || viewType === ViewType.Year) && (
-            <tr style={{ height: 40 }}>{generateMonthHeaders()}</tr>)}
-          <tr style={{ height: 40 }}>{weekNumberRow}</tr>
+            <tr style={{ height: 40, fontSize: fontSize }}>{generateMonthHeaders()}</tr>)}
+
+          <tr style={{ height: 40, fontSize: fontSize }}>{weekNumberRow}</tr>
+
           {viewType === ViewType.Custom && (<tr style={{ height: 40, fontSize: fontSize }}>{shiftLabels}</tr>)}
         </>);
       })()}

@@ -6,8 +6,8 @@ function App() {
 
   return (
     <>
-    {/* <ReactPlanner/> */}
-    <NewApp />
+    <ReactPlanner/>
+    {/* <NewApp /> */}
     </>
   )
 }

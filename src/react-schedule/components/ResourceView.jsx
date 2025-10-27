@@ -46,7 +46,7 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
     );
 
     let slotItem = (
-      <div title={item.slotTitle || item.slotName} className="overflow-text header2-text" style={{ textAlign: 'left' }}>
+      <div title={item.slotTitle || item.slotName} className="overflow-text header2-text" style={{ textAlign: 'center' }}>
         {slotCell}
       </div>
     );

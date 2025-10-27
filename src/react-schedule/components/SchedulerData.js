@@ -384,9 +384,9 @@ export default class SchedulerData {
   getContentCellWidth() {
     const contentCellConfigWidth = this.getContentCellConfigWidth();
     const schedulerWidth = this.getSchedulerWidth();
-
-    if (this.viewType === ViewType.Day) {
-      const baseWeekCellWidth = 45;
+	
+    if (this.viewType === ViewType.Custom) {
+    const baseWeekCellWidth = 45;
       const weekViewWidth = 7 * (this.config.shiftCount || 1) * baseWeekCellWidth;
       return this.headers.length > 0 ? Math.floor(weekViewWidth / this.headers.length) : baseWeekCellWidth;
     }
@@ -409,8 +409,8 @@ export default class SchedulerData {
       contentCellConfigWidth;
 
     let cellWidth = baseCellWidth;
-
-    if (this.viewType === ViewType.Week && !this.isContentViewResponsive()) {
+	
+  if (this.viewType === ViewType.Week && !this.isContentViewResponsive()) {
       cellWidth = baseCellWidth;
     }
 
@@ -420,7 +420,7 @@ export default class SchedulerData {
       const fullWeekColumns = fullWeekDays * shiftMultiplier;
       const visibleColumns = this.headers.length; // actual visible columns (without weekends)
       
-      if (visibleColumns > 0 && fullWeekColumns > visibleColumns) {
+      if (visibleColumns > 0 && fullWeekColumns > visibleColumns) {										  
         cellWidth = cellWidth * (fullWeekColumns / visibleColumns);
       }
     }
@@ -429,7 +429,7 @@ export default class SchedulerData {
       const originalCellWidth = cellWidth;
       cellWidth = cellWidth * this.config.zoomLevel;
 
-      if (this.config.zoomLevel < 1.0 && this.headers.length > 0 && this.viewType !== ViewType.Year) {
+    if (this.config.zoomLevel < 1.0 && this.headers.length > 0 && this.viewType !== ViewType.Year) {
         const zoomedTableWidth = this.headers.length * cellWidth;
 
         const resourceTableConfigWidth = this.getResourceTableConfigWidth();
@@ -673,7 +673,7 @@ export default class SchedulerData {
     };
 
     const configProperty = viewConfigMap[this.viewType] || 'customCellWidth';
-    const configValue = this.config[configProperty];
+   const configValue = this.config[configProperty];
 
     return configValue;
   }
@@ -917,11 +917,13 @@ export default class SchedulerData {
         // Create a header for each shift of the day
         const createWeekHeaders = (day, shiftList) => {
           shiftList.forEach((shift, index) => {
-            const dayTime = `${day.format('YYYY-MM-DD')}`;
+            const time = day.format(DATETIME_FORMAT);
+            const dayTime = day.format('YYYY-MM-DD');
             const startTime = `${dayTime} ${shift.start}`;
             const overnight = shift.end < shift.start;
             const endTime = overnight ? `${day.add(1, 'day').format('YYYY-MM-DD')} ${shift.end}`
               : `${dayTime} ${shift.end}`;
+            const nonWorkingTime = this.behaviors.isNonWorkingTimeFunc(this, time);
 
             headers.push({
               time: startTime,
@@ -929,7 +931,7 @@ export default class SchedulerData {
               end: endTime,
               shift,
               shiftIndex: index,
-              nonWorkingTime: headers.nonWorkingTime,
+              nonWorkingTime: nonWorkingTime,
               id: `${dayTime}-shift-${index}`
             });
           });

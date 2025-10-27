@@ -212,15 +212,23 @@
 }
 
 /* ANT Design Components */
+.ant-picker-calendar-header {
+  align-items: center;
+}
+
 .react-big-schedule .ant-radio-button-wrapper-checked {
   background-color: #108ee9;
   color: #ffffff;
 }
 
 .ant-radio-button-wrapper {
-  margin: 5px;
+  margin: 6px;
   border-radius: 6px;
   padding-inline: 5px;
+}
+
+.ant-radio-button-wrapper:not(:first-child)::before {
+  display: none !important;
 }
 
 .react-big-schedule .icon-nav:hover {
