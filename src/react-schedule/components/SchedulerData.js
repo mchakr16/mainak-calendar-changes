@@ -183,21 +183,100 @@ export default class SchedulerData {
 
   zoomIn() {
     if (!this.config.zoomEnabled) return;
-    const newZoomLevel = Math.min(this.config.zoomLevel + this.config.zoomStep, this.config.maxZoomLevel);
+    let newZoomLevel = this.config.zoomLevel + this.config.zoomStep;
+    
+    newZoomLevel = this._getNextValidZoomLevel(newZoomLevel, true);
+    newZoomLevel = Math.min(newZoomLevel, this.config.maxZoomLevel);
+    
     this.setZoomLevel(newZoomLevel);
   }
 
   zoomOut() {
     if (!this.config.zoomEnabled) return;
-    const newZoomLevel = Math.max(this.config.zoomLevel - this.config.zoomStep, this.config.minZoomLevel);
+    let newZoomLevel = this.config.zoomLevel - this.config.zoomStep;
+    
+    newZoomLevel = this._getNextValidZoomLevel(newZoomLevel, false);
+    newZoomLevel = Math.max(newZoomLevel, this.config.minZoomLevel);
     this.setZoomLevel(newZoomLevel);
   }
 
   setZoomLevel(zoomLevel) {
     if (!this.config.zoomEnabled) return;
-    this.config.zoomLevel = Math.max(this.config.minZoomLevel, Math.min(this.config.maxZoomLevel, zoomLevel));
+    
+    const restrictedZoomLevel = this._getRestrictedZoomLevel(zoomLevel);
+    this.config.zoomLevel = Math.max(this.config.minZoomLevel, Math.min(this.config.maxZoomLevel, restrictedZoomLevel));
     this._createHeaders();
     this._createRenderData();
+  }
+
+  _getNextValidZoomLevel(targetZoomLevel, isZoomingIn) {
+    if (this._isZoomLevelRestricted(targetZoomLevel)) {
+      if (isZoomingIn) {
+        let nextLevel = targetZoomLevel + this.config.zoomStep;
+        while (nextLevel <= this.config.maxZoomLevel && this._isZoomLevelRestricted(nextLevel)) {
+          nextLevel += this.config.zoomStep;
+        }
+        return Math.min(nextLevel, this.config.maxZoomLevel);
+      } else {
+        let nextLevel = targetZoomLevel - this.config.zoomStep;
+        while (nextLevel >= this.config.minZoomLevel && this._isZoomLevelRestricted(nextLevel)) {
+          nextLevel -= this.config.zoomStep;
+        }
+        return Math.max(nextLevel, this.config.minZoomLevel);
+      }
+    }
+    return targetZoomLevel;
+  }
+
+  _isZoomLevelRestricted(zoomLevel) {
+    const isDayView = (this.viewType === ViewType.Custom || this.viewType === ViewType.Custom1 || this.viewType === ViewType.Custom2) 
+                      && this.cellUnit === CellUnit.Hour;
+    
+    if (isDayView || this.viewType === ViewType.Week || this.viewType === ViewType.Month) {
+      return zoomLevel === 0.75 || zoomLevel === 0.5;
+    } else if (this.viewType === ViewType.Quarter) {
+      return zoomLevel === 0.5;
+    }
+    return false;
+  }
+
+  _shouldResetZoomForViewChange(currentZoom, newViewType) {
+    const isNewViewDay = (newViewType === ViewType.Custom || newViewType === ViewType.Custom1 || newViewType === ViewType.Custom2);
+    const isNewViewWeek = newViewType === ViewType.Week;
+    const isNewViewMonth = newViewType === ViewType.Month;
+    const isNewViewQuarter = newViewType === ViewType.Quarter;
+    
+    if (this.viewType === ViewType.Year && currentZoom === 0.5) {
+      if (isNewViewDay || isNewViewWeek || isNewViewMonth || isNewViewQuarter) {
+        return true;
+      }
+    }
+    
+    if (this.viewType === ViewType.Year && currentZoom === 0.75) {
+      if (isNewViewDay || isNewViewWeek || isNewViewMonth) {
+        return true;
+      }
+    }
+    
+    return this._wouldZoomBeRestrictedInView(currentZoom, newViewType);
+  }
+
+  _wouldZoomBeRestrictedInView(zoomLevel, viewType) {
+    const isViewDay = (viewType === ViewType.Custom || viewType === ViewType.Custom1 || viewType === ViewType.Custom2);
+    
+    if (isViewDay || viewType === ViewType.Week || viewType === ViewType.Month) {
+      return zoomLevel === 0.75 || zoomLevel === 0.5;
+    } else if (viewType === ViewType.Quarter) {
+      return zoomLevel === 0.5;
+    }
+    return false;
+  }
+
+  _getRestrictedZoomLevel(zoomLevel) {
+    if (this._isZoomLevelRestricted(zoomLevel)) {
+      return this.config.zoomLevel;
+    }
+    return zoomLevel;
   }
 
   resetZoom() {
@@ -209,12 +288,33 @@ export default class SchedulerData {
     return this.config.zoomLevel || 1.0;
   }
 
+  getAvailableZoomLevels() {
+    const zoomLevels = [];
+    for (let level = this.config.minZoomLevel; level <= this.config.maxZoomLevel; level += this.config.zoomStep) {
+      const roundedLevel = Math.round(level * 100) / 100;
+      if (!this._isZoomLevelRestricted(roundedLevel)) {
+        zoomLevels.push(roundedLevel);
+      }
+    }
+    return zoomLevels;
+  }
+
   canZoomIn() {
-    return this.config.zoomEnabled && this.config.zoomLevel < this.config.maxZoomLevel;
+    if (!this.config.zoomEnabled) return false;
+    
+    let nextZoomLevel = this.config.zoomLevel + this.config.zoomStep;
+    nextZoomLevel = this._getNextValidZoomLevel(nextZoomLevel, true);
+    nextZoomLevel = Math.min(nextZoomLevel, this.config.maxZoomLevel);
+    return nextZoomLevel > this.config.zoomLevel;
   }
 
   canZoomOut() {
-    return this.config.zoomEnabled && this.config.zoomLevel > this.config.minZoomLevel;
+    if (!this.config.zoomEnabled) return false;
+    
+    let nextZoomLevel = this.config.zoomLevel - this.config.zoomStep;
+    nextZoomLevel = this._getNextValidZoomLevel(nextZoomLevel, false);
+    nextZoomLevel = Math.max(nextZoomLevel, this.config.minZoomLevel);
+    return nextZoomLevel < this.config.zoomLevel;
   }
 
   setViewType(viewType = ViewType.Week, showAgenda = false, isEventPerspective = false) {
@@ -240,6 +340,11 @@ export default class SchedulerData {
 
       if (viewType === ViewType.Custom || viewType === ViewType.Custom1 || viewType === ViewType.Custom2) {
         this.viewType = viewType;
+        const currentZoom = this.config.zoomLevel;
+        const shouldResetZoom = this._shouldResetZoomForViewChange(currentZoom, viewType);
+        if (shouldResetZoom) {
+          this.config.zoomLevel = 1.0;
+        }
         this._resolveDate(0, date);
       } else {
         if (this.viewType < viewType ||
@@ -293,6 +398,11 @@ export default class SchedulerData {
         }
 
         this.viewType = viewType;
+        const currentZoom = this.config.zoomLevel;
+        const shouldResetZoom = this._shouldResetZoomForViewChange(currentZoom, viewType);
+        if (shouldResetZoom) {
+          this.config.zoomLevel = 1.0;
+        }
       }
 
       this._shouldReloadViewType = false;
@@ -384,9 +494,16 @@ export default class SchedulerData {
   getContentCellWidth() {
     const contentCellConfigWidth = this.getContentCellConfigWidth();
     const schedulerWidth = this.getSchedulerWidth();
-	
+    const resourceTableWidth = this.config.resourceTableWidth;
+ 
+    const schedulerContainerWidth = schedulerWidth - (config.resourceViewEnabled ? resourceTableWidth : 0);
+ 
     if (this.viewType === ViewType.Custom) {
-    const baseWeekCellWidth = 45;
+      return schedulerContainerWidth / (8 * (this.config.shiftCount || 1));
+    }
+
+    if (this.viewType === ViewType.Custom) {
+      const baseWeekCellWidth = 45;
       const weekViewWidth = 7 * (this.config.shiftCount || 1) * baseWeekCellWidth;
       return this.headers.length > 0 ? Math.floor(weekViewWidth / this.headers.length) : baseWeekCellWidth;
     }
@@ -409,8 +526,8 @@ export default class SchedulerData {
       contentCellConfigWidth;
 
     let cellWidth = baseCellWidth;
-	
-  if (this.viewType === ViewType.Week && !this.isContentViewResponsive()) {
+
+    if (this.viewType === ViewType.Week && !this.isContentViewResponsive()) {
       cellWidth = baseCellWidth;
     }
 
@@ -420,7 +537,7 @@ export default class SchedulerData {
       const fullWeekColumns = fullWeekDays * shiftMultiplier;
       const visibleColumns = this.headers.length; // actual visible columns (without weekends)
       
-      if (visibleColumns > 0 && fullWeekColumns > visibleColumns) {										  
+      if (visibleColumns > 0 && fullWeekColumns > visibleColumns) {
         cellWidth = cellWidth * (fullWeekColumns / visibleColumns);
       }
     }
@@ -429,7 +546,7 @@ export default class SchedulerData {
       const originalCellWidth = cellWidth;
       cellWidth = cellWidth * this.config.zoomLevel;
 
-    if (this.config.zoomLevel < 1.0 && this.headers.length > 0 && this.viewType !== ViewType.Year) {
+      if (this.config.zoomLevel < 1.0 && this.headers.length > 0 && this.viewType !== ViewType.Year) {
         const zoomedTableWidth = this.headers.length * cellWidth;
 
         const resourceTableConfigWidth = this.getResourceTableConfigWidth();
@@ -673,7 +790,7 @@ export default class SchedulerData {
     };
 
     const configProperty = viewConfigMap[this.viewType] || 'customCellWidth';
-   const configValue = this.config[configProperty];
+    const configValue = this.config[configProperty];
 
     return configValue;
   }
