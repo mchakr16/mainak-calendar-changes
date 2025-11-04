@@ -501,7 +501,8 @@ function Scheduler(props) {
               onBlur={onSchedulerContentMouseOut}
               onScroll={onSchedulerContentScroll}
             >
-              <div style={{ width: schedulerData.viewType === ViewType.Custom ? Math.max(schedulerContainerWidth, weekViewWidth) : tableWidth }}>
+              {/* <div style={{ width: schedulerData.viewType === ViewType.Custom ? Math.max(schedulerContainerWidth, weekViewWidth) : tableWidth }}> */}
+              <div style={{ width: 'max-content' }}>
                 <div className="scheduler-content">
                   <table className="scheduler-content-table">
                     <tbody>{resourceEventsList}</tbody>
