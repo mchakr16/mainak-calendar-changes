@@ -32,18 +32,21 @@ export default class DnDSource {
       const isEvent = type === DnDTypes.EVENT;
       if (isEvent) {
         const event = item;
-        if (config.relativeMove) {
-          newStart = localeDayjs(event.start)
-            .add(localeDayjs(newStart).diff(localeDayjs(new Date(initialStart))), 'ms')
-            .format(DATETIME_FORMAT);
+        if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
+          newStart = localeDayjs(new Date(newStart)).startOf('week').format(DATETIME_FORMAT);
+        } else if (config.relativeMove) {
+          newStart = localeDayjs(event.start).add(localeDayjs(newStart).diff(localeDayjs(new Date(initialStart))), 'ms').format(DATETIME_FORMAT);
         } else if (viewType !== ViewType.Day) {
           const tmpDayjs = localeDayjs(newStart);
-          newStart = localeDayjs(event.start).year(tmpDayjs.year()).month(tmpDayjs.month()).date(tmpDayjs.date())
+          newStart = localeDayjs(event.start).year(tmpDayjs.year()).month(tmpDayjs.month()).date(tmpDayjs.date()).format(DATETIME_FORMAT);
+        }
+
+        if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
+          newEnd = localeDayjs(new Date(newStart)).endOf('week').format(DATETIME_FORMAT);
+        } else {
+          newEnd = localeDayjs(newStart).add(localeDayjs(event.end).diff(localeDayjs(event.start)), 'ms')
             .format(DATETIME_FORMAT);
         }
-        newEnd = localeDayjs(newStart)
-          .add(localeDayjs(event.end).diff(localeDayjs(event.start)), 'ms')
-          .format(DATETIME_FORMAT);
 
         // if crossResourceMove disabled, slot returns old value
         if (config.crossResourceMove === false) {

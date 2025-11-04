@@ -356,6 +356,7 @@ function Scheduler(props) {
     const resourceTableWidth = schedulerData.getResourceTableWidth();
     const schedulerContainerWidth = width - (config.resourceViewEnabled ? resourceTableWidth : 0);
     const calculatedSchedulerWidth = schedulerData.getContentTableWidth() - 1;
+    // const resourceTableContainerWidth = schedulerData.config.resourceTableWidth;
 
     const schedulerWidth = calculatedSchedulerWidth;
 
@@ -366,7 +367,7 @@ function Scheduler(props) {
       tableWidth = cellWidth * numCells;
     }
     const weekViewWidth = (schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Quarter) ?
-      (7 * (schedulerData.config.shiftCount || 1) * 45) : tableWidth;
+      (7 * (schedulerData.config.shiftCount || 3) * 45) : tableWidth;
 
     let monthViewWidth = schedulerWidth;
     if (schedulerData.viewType === ViewType.Month) {
@@ -398,11 +399,11 @@ function Scheduler(props) {
 
     let resourceContentStyle = {
       height: contentHeight,
-      overflowX: 'auto',
+      overflowX: 'hidden',
       overflowY: 'auto',
-      width: resourceTableWidth + resourceScrollbarWidth - 2,
+      width: resourceTableWidth,
       margin: `0px -${contentScrollbarWidth}px 0px 0px`,
-      maxWidth: 200
+      maxWidth: resourceTableWidth
     };
 
     if (config.schedulerMaxHeight > 0) {
@@ -435,11 +436,11 @@ function Scheduler(props) {
         <td style={{ display: config.resourceViewEnabled ? undefined : 'none', width: resourceTableWidth, verticalAlign: 'top', maxWidth: 200 }}>
           <div className="resource-view">
             <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
-              <div style={{ overflowX: 'scroll', overflowY: 'hidden', margin: `0px 0px -${contentScrollbarHeight}px` }}>
+              <div style={{ overflowX: 'hidden', overflowY: 'auto', margin: `0px 0px -${contentScrollbarHeight}px` }}>
                 <table className="resource-table">
                   <thead>
                     <tr style={{ height: config.tableHeaderHeight }}>
-                      <th className="header3-text">{resourceName}</th>
+                      <th className="header3-text resource-name">{resourceName}</th>
                     </tr>
                   </thead>
                 </table>
@@ -500,13 +501,13 @@ function Scheduler(props) {
               onBlur={onSchedulerContentMouseOut}
               onScroll={onSchedulerContentScroll}
             >
-              <div style={{ width: tableWidth }}>
+              <div style={{ width: schedulerData.viewType === ViewType.Custom ? Math.max(schedulerContainerWidth, weekViewWidth) : tableWidth }}>
                 <div className="scheduler-content">
                   <table className="scheduler-content-table">
                     <tbody>{resourceEventsList}</tbody>
                   </table>
                 </div>
-                <div className="scheduler-bg">
+                <div className="scheduler-bg" style={{ paddingRight: `${contentScrollbarWidth}px` }}>
                   <table className="scheduler-bg-table" style={{
                     width: tableWidth,
                     // minWidth: tableWidth,

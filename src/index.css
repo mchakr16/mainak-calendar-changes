@@ -1,5 +1,3 @@
-
-
 .react-big-schedule {
   width: 100% !important;
   max-width: 100% !important;
@@ -9,10 +7,8 @@
   text-align: center;
 }
 
-.ant-row.ant-row-space-between.ant-row-middle.css-dev-only-do-not-override-1odpy5d {
-  width: 95vw;
-}
 
-.scheduler-bg-table{
+.scheduler-bg-table {
   table-layout: fixed;
 }
+

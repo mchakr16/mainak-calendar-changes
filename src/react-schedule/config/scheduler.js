@@ -63,6 +63,7 @@ export default {
   shiftOneBgColor: '#f1fef5ff',
   shiftTwoBgColor: '#ffffe8ff',
   shiftThirdBgColor: '#f2f9fcff',
+  noShiftColor: '#ffffff',
 
   startResizable: true,
   endResizable: true,

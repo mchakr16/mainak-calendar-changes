@@ -2,7 +2,7 @@ import { LeftOutlined, RightOutlined, ZoomInOutlined, ZoomOutOutlined, Fullscree
 import { Button, Calendar, Col, Popover, Radio, Row, Space, Spin } from 'antd';
 import dayjs from 'dayjs';
 import PropTypes from 'prop-types';
-import React, { useState, createElement } from 'react';
+import React, { useState, createElement, useEffect } from 'react';
 import { DATE_FORMAT } from '../config/default';
 
 const RadioButton = Radio.Button;
@@ -34,6 +34,7 @@ const SchedulerHeader = React.forwardRef(({
   const selectDate = schedulerData.getSelectedDate();
   const calendarLocale = schedulerData.getCalendarPopoverLocale()?.default?.Calendar;
   const displayWeekend = schedulerData.config.displayWeekend;
+  const disabledWeekendOnViewsList = schedulerData.config.disabledWeekendOnViewsList ?? [];
   const shiftCount = schedulerData.config.shiftCount;
   const defaultValue = `${viewType}${showAgenda ? 1 : 0}${isEventPerspective ? 1 : 0}`;
   const [isToggleChecked, setIsToggleChecked] = useState(displayWeekend);
@@ -63,6 +64,16 @@ const SchedulerHeader = React.forwardRef(({
       coreFunc();
     }
   };
+
+  // Disbale Weekend button on day view
+  const [disabledWeekendflag, setDisabledWeekendflag] = useState(false);
+  useEffect(() => {
+    if (disabledWeekendOnViewsList.includes(viewType)) {
+      setDisabledWeekendflag(true)
+    } else {
+      setDisabledWeekendflag(false)
+    }
+  }, [viewType]);
 
   // Calendar button
   const [tempDate, setTempDate] = useState(dayjs(selectDate));
@@ -211,7 +222,7 @@ const SchedulerHeader = React.forwardRef(({
         </div>
       </Col>
       <Col>
-        <Space >
+        <Space>
           <Spin spinning={viewSpinning} />
           <RadioGroup
             buttonStyle="solid"
@@ -225,7 +236,7 @@ const SchedulerHeader = React.forwardRef(({
           <div className="toggle-container">
             <label className="toggle-text">Weekend:</label>
             <label className="toggle-switch">
-              <input type="checkbox" checked={isToggleChecked} onChange={event => handleToggle(event)} />
+              <input type="checkbox" disabled={disabledWeekendflag} checked={isToggleChecked} onChange={event => handleToggle(event)} />
               <span className="slider"></span>
             </label>
           </div>

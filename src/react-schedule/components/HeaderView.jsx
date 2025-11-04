@@ -6,31 +6,41 @@ import { CellUnit, ViewType } from '../config/default';
 
 const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
   const { headers, cellUnit, config, localeDayjs, viewType } = schedulerData;
-  const headerHeight = schedulerData.getTableHeaderHeight();
+  // const headerHeight = schedulerData.getTableHeaderHeight();
   const cellWidth = schedulerData.getContentCellWidth();
   const minuteStepsInHour = schedulerData.getMinuteStepsInHour();
-  const shiftCount = config.shiftCount;
+  // const shiftCount = config.shiftCount;
   const fontSize = 12;
   const weekDayCount = config.displayWeekend ? 7 : 5;
+  const shiftSlots = config.shiftSlots;
 
   const shiftColors = {
     0: config.shiftOneBgColor,
     1: config.shiftTwoBgColor,
     2: config.shiftThirdBgColor,
+    3: config.noShiftColor,
   };
 
   let headerList = [];
   let style;
 
+  const totalObjects = headers.length;
+  const objectsPerShift = Math.ceil(totalObjects / 3); // forSH
+
   if (cellUnit === CellUnit.Hour) {
-    const totalObjects = headers.length;
-    const objectsPerShift = Math.ceil(totalObjects / shiftCount);
 
     headers.forEach((item, index) => {
       item.shiftIndex = Math.floor(index / objectsPerShift);
 
+      const currentShift = shiftSlots[item.shiftIndex];
+      const isNoShift = !currentShift?.label || currentShift.label.trim() === '';
+
       if (index % minuteStepsInHour === 0) {
         const datetime = localeDayjs(new Date(item.time));
+
+        const backgroundColor = isNoShift
+          ? config.noShiftColor
+          : shiftColors[item.shiftIndex] || config.defaultShiftColor;
 
         style = item.nonWorkingTime
           ? {
@@ -40,7 +50,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
           }
           : {
             width: cellWidth * minuteStepsInHour,
-            backgroundColor: shiftColors[item.shiftIndex]
+            backgroundColor
           };
 
         if (index === headers.length - minuteStepsInHour) {
@@ -48,12 +58,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
             ? {
               color: config.nonWorkingTimeHeadColor,
               backgroundColor: config.nonWorkingTimeHeadBgColor,
-            }
-            : { backgroundColor: shiftColors[item.shiftIndex] };
+            } : { backgroundColor };
         }
 
-        const pFormattedList = config.nonAgendaDayCellHeaderFormat
-          .split('|').map((pitem) => datetime.format(pitem));
+        const pFormattedList = config.nonAgendaDayCellHeaderFormat.split('|').map((pitem) => datetime.format(pitem));
 
         let element;
 
@@ -73,7 +81,8 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
             <td
               key={`header-${item.time}`}
               className="header3-text"
-              style={{ ...style, width: cellWidth }} >
+              style={{ ...style, width: cellWidth }}
+            >
               {pList}
             </td>
           );
@@ -84,19 +93,30 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
   } else {
     headerList = headers.map((item, index) => {
       const datetime = localeDayjs(new Date(item.time));
-      style = item.nonWorkingTime ? {
-        width: cellWidth,
-        color: config.nonWorkingTimeHeadColor,
-        backgroundColor: config.nonWorkingTimeHeadBgColor,
-      } : viewType === ViewType.Week ? {
-        backgroundColor: shiftColors[item.shiftIndex]
-      } : { width: cellWidth };
-      if (index === headers.length - 1 && viewType !== ViewType.Week)
-        style = item.nonWorkingTime ? {
+
+      let backgroundColor = item.isShift
+        ? shiftColors[item.shiftIndex] || config.defaultShiftColor : config.noShiftColor;
+
+      if (item.nonWorkingTime) {
+        style = {
           width: cellWidth,
           color: config.nonWorkingTimeHeadColor,
           backgroundColor: config.nonWorkingTimeHeadBgColor,
-        } : { width: cellWidth };
+        };
+      } else if (viewType === ViewType.Week) {
+        style = { backgroundColor };
+      } else {
+        style = { width: cellWidth };
+      }
+
+      if (index === headers.length - 1 && viewType !== ViewType.Week) {
+        style = item.nonWorkingTime
+          ? {
+            width: cellWidth,
+            color: config.nonWorkingTimeHeadColor,
+            backgroundColor: config.nonWorkingTimeHeadBgColor,
+          } : { width: cellWidth };
+      }
       const cellFormat =
         cellUnit === CellUnit.Week
           ? config.nonAgendaWeekCellHeaderFormat
@@ -229,9 +249,10 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
             );
           });
 
-        const shiftLabels = Array.from({ length: shiftCount }, (_, shiftIndex) => (
-          <td key={`shift-label-${shiftIndex}`} colSpan={24 / shiftCount} style={{ textAlign: 'center' }}>
-            Shift {shiftIndex + 1}</td>
+        const shiftLabels = shiftSlots.map((shift, shiftIndex) => (
+          <td key={`shift-label-${shiftIndex}`} colSpan={objectsPerShift} align="center">
+            {shift.label || ''}
+          </td>
         ));
 
         return (<>
@@ -246,7 +267,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
 
       {viewType === ViewType.Week && <tr style={{ height: 40 }}>
         {formattedWeekDates.map((dateStr, index) => (
-          <td key={`day-header-${index}`} colSpan={shiftCount} style={{ textAlign: 'center', fontSize: fontSize }}>{dateStr}</td>
+          <td key={`day-header-${index}`} colSpan={3} style={{ textAlign: 'center', fontSize: fontSize }}>{dateStr}</td>
         ))}
       </tr>}
 

@@ -187,7 +187,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 5px !important;
+  /* padding-right: 5px !important; */
 }
 
 .react-big-schedule .status-dot {
@@ -370,6 +370,8 @@
 .react-big-schedule table.scheduler-bg-table {
   min-width: 100%;
   width: auto;
+  border-collapse: collapse;
+  /* forSH */
 }
 
 .react-big-schedule .scheduler-view {
@@ -401,4 +403,38 @@
 .react-big-schedule .scheduler-table td {
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.resource-slot {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 5px !important;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.resource-name {
+  text-align: left;
+  padding-left: 20px;
+}
+
+/* ioon css */
+.event-icon-wraper {
+  display: flex;
+}
+
+.event-icon-list {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  align-items: center;
+}
+
+.event-icon-list>span:first-child {
+  padding-left: 2px;
+
+}
+
+.event-icon-list span {
+  padding-left: 1px;
 }

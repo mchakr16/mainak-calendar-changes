@@ -5,8 +5,9 @@
 import { Popover } from 'antd';
 import { PropTypes } from 'prop-types';
 import React, { Component, createElement } from 'react';
-import { CellUnit, DATETIME_FORMAT, DnDTypes, ViewType } from '../config/default';
+import { CellUnit, DATETIME_FORMAT, DnDTypes, ViewType, IconType } from '../config/default';
 import EventItemPopover from './EventItemPopover';
+import { InfoCircleFilled, WarningFilled, CheckCircleFilled } from '@ant-design/icons';
 
 const stopDragHelper = ({ count, cellUnit, config, dragType, eventItem, localeDayjs, value, viewType }) => {
   const whileTrue = true;
@@ -15,8 +16,7 @@ const stopDragHelper = ({ count, cellUnit, config, dragType, eventItem, localeDa
   let result = value;
   return new Promise(resolve => {
     if (count !== 0 && cellUnit !== CellUnit.Hour && config.displayWeekend === false) {
-      const isWeekWithShifts = viewType === ViewType.Week && config.shiftCount > 1;
-      if (isWeekWithShifts) {
+      if (viewType === ViewType.Week || viewType === ViewType.Quarter || viewType === ViewType.Year) {
         resolve(result);
         return;
       }
@@ -61,6 +61,8 @@ class EventItem extends Component {
 
     this.eventItemRef = React.createRef();
     this._isMounted = false;
+    this.preventClick = false;
+    this.clickTimeout = null;
   }
 
   componentDidMount() {
@@ -194,11 +196,12 @@ class EventItem extends Component {
     //   .add(cellUnit === CellUnit.Hour ? count * config.minuteStep : count, cellUnit === CellUnit.Hour ? 'minutes' : 'days').format(DATETIME_FORMAT);
 
     let newStart;
-    const isWeekWithShifts = viewType === ViewType.Week && config.shiftCount > 1;
     if (cellUnit === CellUnit.Hour) {
       newStart = localeDayjs(new Date(eventItem.start)).add(count * config.minuteStep, 'minutes').format(DATETIME_FORMAT);
-    } else if (isWeekWithShifts) {
+    } else if (viewType === ViewType.Week) {
       newStart = localeDayjs(new Date(eventItem.start)).add(count * 24 / config.shiftCount, 'hours').format(DATETIME_FORMAT);
+    } else if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
+      newStart = localeDayjs(new Date(eventItem.start)).startOf('week').format(DATETIME_FORMAT);
     } else {
       newStart = localeDayjs(new Date(eventItem.start)).add(count, 'days').format(DATETIME_FORMAT);
     }
@@ -334,11 +337,12 @@ class EventItem extends Component {
     // let newEnd = localeDayjs(new Date(eventItem.end))
     //   .add(cellUnit === CellUnit.Hour ? count * config.minuteStep : count, cellUnit === CellUnit.Hour ? 'minutes' : 'days').format(DATETIME_FORMAT);
     let newEnd;
-    const isWeekWithShifts = viewType === ViewType.Week && config.shiftCount > 1;
     if (cellUnit === CellUnit.Hour) {
       newEnd = localeDayjs(new Date(eventItem.end)).add(count * config.minuteStep, 'minutes').format(DATETIME_FORMAT);
-    } else if (isWeekWithShifts) {
+    } else if (viewType === ViewType.Week) {
       newEnd = localeDayjs(new Date(eventItem.end)).add(count * 24 / config.shiftCount, 'hours').format(DATETIME_FORMAT);
+    } else if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
+      newEnd = localeDayjs(new Date(eventItem.end)).endOf('week').format(DATETIME_FORMAT);
     } else {
       newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').format(DATETIME_FORMAT);
     }
@@ -431,8 +435,15 @@ class EventItem extends Component {
     }
   };
 
+  eventItemIconClickInt = (schedulerData, eventItem, iconType) => {
+    // e.stopPropagation();
+    const { eventItemIconClick } = this.props;
+    if (eventItemIconClick) eventItemIconClick(schedulerData, eventItem, iconType);
+  }
+
   render() {
-    const { eventItem, isStart, isEnd, isInPopover, eventItemClick, schedulerData, isDragging, connectDragSource, connectDragPreview, eventItemTemplateResolver } = this.props;
+    const { eventItem, isStart, isEnd, isInPopover, eventItemClick, eventItemDoubleClick,
+      schedulerData, isDragging, connectDragSource, connectDragPreview, eventItemTemplateResolver } = this.props;
     const { config, localeDayjs } = schedulerData;
     const { left, width, top } = this.state;
     let roundCls;
@@ -459,8 +470,15 @@ class EventItem extends Component {
     if (endResizable(this.props)) endResizeDiv = <div className="event-resizer event-end-resizer" ref={ref => (this.endResizer = ref)} />;
 
     let eventItemTemplate = (
-      <div className={`${roundCls} event-item`} key={eventItem.id} style={{ height: config.eventItemHeight, backgroundColor: bgColor }}>
-        <span style={{ marginLeft: '10px', lineHeight: `${config.eventItemHeight}px` }}>{eventTitle}</span>
+      <div className={`${roundCls} event-item event-icon-wraper`} key={eventItem.id} style={{ height: config.eventItemHeight, backgroundColor: bgColor }}>
+        <div className='event-icon-list'>
+          <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Info) }}><InfoCircleFilled /></span>
+          {eventItem.hasConstraint && (
+            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Constraint) }}><WarningFilled /></span>)}
+          {eventItem.isRecurrent && (
+            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Recurrent) }}><CheckCircleFilled /></span>)}
+        </div>
+        <div className='event-title'><span style={{ marginLeft: '5px', lineHeight: `${config.eventItemHeight}px` }} >{eventTitle}</span></div>
       </div>
     );
     if (eventItemTemplateResolver !== undefined) {
@@ -468,15 +486,23 @@ class EventItem extends Component {
     }
 
     const a = (
-      <a
-        className="timeline-event"
+      <a className="timeline-event"
         ref={this.eventItemRef}
         onMouseMove={isPopoverPlacementMousePosition ? this.handleMouseMove : undefined}
         style={{ left, width, top }}
         onClick={() => {
-          if (eventItemClick) eventItemClick(schedulerData, eventItem);
+          this.clickTimeout = setTimeout(() => {
+            if (!this.preventClick) {
+              if (eventItemClick) eventItemClick(schedulerData, eventItem);
+            }
+            this.preventClick = false;
+          }, 200);
         }}
-      >
+        onDoubleClick={() => {
+          clearTimeout(this.clickTimeout);
+          this.preventClick = true;
+          if (eventItemDoubleClick) eventItemDoubleClick(schedulerData, eventItem);
+        }}>
         {eventItemTemplate}
         {startResizeDiv}
         {endResizeDiv}
@@ -562,6 +588,8 @@ EventItem.propTypes = {
   moveEvent: PropTypes.func,
   subtitleGetter: PropTypes.func,
   eventItemClick: PropTypes.func,
+  eventItemDoubleClick: PropTypes.func,
+  eventItemIconClick: PropTypes.func,
   viewEventClick: PropTypes.func,
   viewEventText: PropTypes.string,
   viewEvent2Click: PropTypes.func,
@@ -579,6 +607,8 @@ EventItem.defaultProps = {
   moveEvent: undefined,
   subtitleGetter: undefined,
   eventItemClick: undefined,
+  eventItemDoubleClick: undefined,
+  eventItemIconClick: undefined,
   viewEventClick: undefined,
   viewEventText: undefined,
   viewEvent2Click: undefined,
@@ -586,3 +616,4 @@ EventItem.defaultProps = {
   conflictOccurred: undefined,
   eventItemTemplateResolver: undefined,
 };
+

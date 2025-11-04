@@ -7,7 +7,8 @@ import EventItem from './react-schedule/components/EventItem';
 import dayjs from "dayjs";
 // import './index.css';
 import './react-schedule/css/style.css'
-// import { ObjectItem, ValueStatus } from "mendix";
+// import { ValueStatus } from 'mendix';
+// import type { ObjectItem, ValueStatus } from 'mendix';
 // import { ReactPlannerContainerProps } from "typings/ReactPlannerProps";
 import 'dayjs/locale/en-gb';
 import weekday from 'dayjs/plugin/weekday';
@@ -24,62 +25,12 @@ dayjs.extend(localeData);
 dayjs.locale('en-gb');
 dayjs.extend(isoWeek);
 
-
 //Default event list
-const eventList: any = [
-    {
-        id: 1,
-        start: '2025-06-20 09:30:00',
-        end: '2025-06-20 13:30:00',
-        resourceId: 'r1',
-        title: 'I am finished',
-        bgColor: '#D9D9D9',
-    },
-    {
-        id: 2,
-        start: '2022-12-18 12:30:00',
-        end: '2022-12-26 23:30:00',
-        resourceId: 'r2',
-        title: 'I am not resizable',
-        resizable: false,
-    },
-    {
-        id: 3,
-        start: '2022-12-19 12:30:00',
-        end: '2022-12-20 23:30:00',
-        resourceId: 'r3',
-        title: 'I am not movable',
-        movable: false,
-    },
-    {
-        id: 4,
-        start: '2022-12-19 14:30:00',
-        end: '2022-12-20 23:30:00',
-        resourceId: 'r1',
-        title: 'I am not start-resizable',
-        startResizable: false,
-    },
-    {
-        id: 5,
-        start: '2022-12-19 10:30:00',
-        end: '2022-12-19 13:30:00',
-        resourceId: 'r2',
-        title: 'R2 has recurring tasks every week on Tuesday, Friday',
-        rrule: 'FREQ=WEEKLY;DTSTART=20221219T013000Z;BYDAY=TU,FR',
-        bgColor: '#f759ab',
-    },
-    {
-        id: 6,
-        start: '2025-10-17 14:30:00',
-        end: '2025-10-17 23:30:00',
-        resourceId: 'r0',
-        title: 'I am not start-resizable',
-    }
-]
+const eventList: any = []
 
 // interface CustomEventItem extends EventItem {
-//   click: () => void;
-//   item: ObjectItem;
+//     click: () => void;
+//     item: ObjectItem;
 // }
 
 const defaultEventColor = "#ccc"
@@ -100,27 +51,34 @@ const reducer = (state, action) => {
     }
 };
 
-const generateShiftSlots = (shiftCount, dayStartFrom) => {
-    const slots: any = [];
-    const totalHours = 24;
-    const slotHours = totalHours / shiftCount;
+// const generateShiftSlots = (shiftCount, dayStartFrom) => {
+//     const slots: any = [];
+//     const totalHours = 24;
+//     const slotHours = totalHours / shiftCount;
 
-    let currentStart = dayStartFrom;
+//     let currentStart = dayStartFrom;
 
-    for (let i = 0; i < shiftCount; i++) {
-        const startHour = currentStart % 24;
-        const endHour = (startHour + slotHours) % 24;
+//     for (let i = 0; i < shiftCount; i++) {
+//         const startHour = currentStart % 24;
+//         const endHour = (startHour + slotHours) % 24;
 
-        const pad = (h) => (h < 10 ? `0${h}` : `${h}`);
-        slots.push({
-            start: `${pad(startHour)}:00`,
-            end: `${pad(endHour)}:00`,
-            label: `Shift ${i + 1}`
-        });
-        currentStart = (currentStart + slotHours) % 24;
-    }
-    return slots;
-}
+//         const to12 = (h: number) => {
+//             const mod = ((h % 24) + 24) % 24;
+//             const hour12 = mod % 12 === 0 ? 12 : mod % 12;
+//             const suffix = mod < 12 ? 'am' : 'pm';
+//             return `${hour12}${suffix}`;
+//         };
+
+//         const pad = (h) => (h < 10 ? `0${h}` : `${h}`);
+//         slots.push({
+//             start: `${pad(startHour)}:00`,
+//             end: `${pad(endHour)}:00`,
+//             label: `${to12(startHour)}-${to12(endHour)}`
+//         });
+//         currentStart = (currentStart + slotHours) % 24;
+//     }
+//     return slots;
+// }
 
 
 let schedulerData: any;
@@ -139,65 +97,55 @@ const ReactPlanner = (props: any) => {
     const [state, dispatch] = useReducer(reducer, initialState);
     const dayStartFrom = props.dayStartFrom || 6; // update dayStartFrom props
     const SHIFT_COUNT = 3; // update shift count
-    const generatedSlots = generateShiftSlots(SHIFT_COUNT, dayStartFrom);
+    // const generatedSlots = generateShiftSlots(SHIFT_COUNT, dayStartFrom);
+
+    const schedulerDataRef = useRef(null);
 
     useEffect(() => {
         schedulerData = new SchedulerData(
             dayjs().format(DATE_FORMAT),
-            ViewType.Week,
+            getDefaultView(),
             false,
             false,
             {
                 schedulerWidth: '95%',
                 minuteStep: 60,
-                schedulerMaxHeight: 400,
-                dayResourceTableWidth: 150,
+                resourceTableWidth: 180,
+                schedulerMaxHeight: window.innerHeight - 200,
+                dayResourceTableWidth: 160,
                 weekResourceTableWidth: 160,
-                customResourceTableWidth: 150,
-                quarterResourceTableWidth: 150,
-                monthResourceTableWidth: 150,
+                customResourceTableWidth: 160,
+                quarterResourceTableWidth: 160,
+                monthResourceTableWidth: 160,
                 tableHeaderHeight: 120,
                 eventItemHeight: 36,
                 eventItemLineHeight: 38,
                 nonAgendaSlotMinHeight: 50,
                 displayWeekend: props.showWeekends || false,
-                weekCellWidth: '12%',
-                monthCellWidth: 40,
+                disabledWeekendOnViewsList: [ViewType.Custom],
+                weekCellWidth: 50,
+                monthCellWidth: 45,
                 quarterCellWidth: 75,
+                customCellWidth: 40,
                 defaultExpanded: false,
+                // endHour: 15,
                 calenderConfig: {
                     applyButtonText: 'Apply',
                     applyButtonType: 'primary',
                     applyButtonAlignment: 'center',
                 },
+                shiftSlots: [
+                    { start: '06:00', end: '14:00', label: 'Shift 1' },
+                    { start: '14:00', end: '22:00', label: 'Shift 2' },
+                    { start: '22:00', end: '06:00', label: 'Shift 3' },
+                ],
                 shiftCount: SHIFT_COUNT,
-                shiftSlots: generatedSlots,
                 views: [
-                    {
-                        viewName: 'Day',
-                        viewType: ViewType.Custom,
-                        showAgenda: false,
-                        isEventPerspective: false,
-                    },
-                    {
-                        viewName: 'Week',
-                        viewType: ViewType.Week,
-                        showAgenda: false,
-                        isEventPerspective: false,
-                    },
-                    {
-                        viewName: 'Month',
-                        viewType: ViewType.Month,
-                        showAgenda: false,
-                        isEventPerspective: false,
-                    },
+                    { viewName: 'Day', viewType: ViewType.Custom, showAgenda: false, isEventPerspective: false },
+                    { viewName: 'Week', viewType: ViewType.Week, showAgenda: false, isEventPerspective: false, },
+                    { viewName: 'Month', viewType: ViewType.Month, showAgenda: false, isEventPerspective: false },
                     { viewName: 'Quarter', viewType: ViewType.Quarter, showAgenda: false, isEventPerspective: false },
-                    {
-                        viewName: 'Year',
-                        viewType: ViewType.Year,
-                        showAgenda: false,
-                        isEventPerspective: false,
-                    },
+                    { viewName: 'Year', viewType: ViewType.Year, showAgenda: false, isEventPerspective: false },
                 ],
             },
             {
@@ -205,22 +153,17 @@ const ReactPlanner = (props: any) => {
                     const day = dayjs(time).day();
                     return day === 0 || day === 6;
                 },
-                getCustomDateFunc: (_schedData, _num, baseDate) => {
-                    const startDate = dayjs(baseDate).hour(Number(dayStartFrom)).minute(0).second(0);
+                getCustomDateFunc: (_schedData, num, baseDate) => {
+                    const base = baseDate ? dayjs(baseDate) : dayjs(_schedData.startDate || dayjs());
+                    const startDate = dayjs(base).add(num, 'day').hour(Number(dayStartFrom)).minute(0).second(0);
                     const endDate = startDate.add(23, 'hour');
-
-                    return {
-                        startDate,
-                        endDate,
-                        cellUnit: CellUnit.Hour,
-                    };
+                    return { startDate, endDate, cellUnit: CellUnit.Hour };
                 },
             }
         );
 
         schedulerData.localeDayjs.locale('en-gb');
-        // schedulerData.setResources(DemoData.resources);
-        // schedulerData.setEvents(eventList);
+        schedulerDataRef.current = schedulerData;
 
         dispatch({ type: 'INITIALIZE', payload: schedulerData });
     }, []);
@@ -267,8 +210,8 @@ const ReactPlanner = (props: any) => {
 
     // Effect: Update events from Mendix data when eventData changes
     useEffect(() => {
-        const newEventList: EventItem[] = [];
-        props.eventData?.items?.forEach(item => {
+        // const newEventList: EventItem[] = [];
+        const newEventList = props.eventData?.items?.map((item) => {
             newEventList.push({
                 id: props.eventIdAttr.get(item).value?.toString()!,
                 start: props.eventStartAttr.get(item).value?.toString()!,
@@ -277,7 +220,8 @@ const ReactPlanner = (props: any) => {
                 title: props.eventTitleAttr.get(item).value?.toString()!,
                 bgColor: props.eventColorAttr ? props.eventColorAttr.get(item).value : defaultEventColor,
                 click: () => onItemClick(item),
-                item: item
+                item: item,
+                resizable: props.eventResourceAttr.get(item).value?.includes('.')
             });
         });
         setEvents(DemoData.events);
@@ -300,15 +244,23 @@ const ReactPlanner = (props: any) => {
 
     // Effect: Update resources from Mendix data when resourceData changes
     useEffect(() => {
-        const newResourceList: any[] = [];
-        props.resourceData?.items?.forEach(item => {
-            newResourceList.push({
-                id: props.resourceIdAttr.get(item).value?.toString()!,
-                name: props.resourceNameAttr.get(item).value?.toString()!
-            });
-        });
+        // const newResourceList: any[] = [];
+        // props.resourceData?.items?.forEach(item => {
+        //     newResourceList.push({
+        //         id: props.resourceIdAttr.get(item).value?.toString()!,
+        //         name: props.resourceNameAttr.get(item).value?.toString()!
+        //     });
+        // });
         // setResources(DemoData.resources);
-        schedulerData.setResources(DemoData.resources);
+
+        const newResourceList: any[] = DemoData.resources?.map((item) => {
+            const id = item.parentId ? `${item.id}.${item.parentId}` : item.id?.toString();
+            const name = item.name?.toString();
+            const parentId = item.parentId?.toString();
+            const hasRealParent = parentId != null && parentId !== '' && parentId !== '0';
+            return { id, name, ...(hasRealParent ? { parentId } : {}) };
+        }) ?? [];
+        schedulerData.setResources(newResourceList);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     }, [props.resourceData, schedulerData, props.resourceIdAttr, props.resourceNameAttr]);
 
@@ -316,12 +268,11 @@ const ReactPlanner = (props: any) => {
      * Handler for clicking the "previous" button in the scheduler.
      * Moves the view to the previous time period and updates events.
      */
-    const prevClick = () => {
+    const prevClick = (schedulerData) => {
         schedulerData.prev();
         updateViewStartEnd(schedulerData)
         // props.eventData.reload();
         schedulerData.setEvents(events);
-        // forceUpdateSchedulerData(schedulerData);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
@@ -329,12 +280,11 @@ const ReactPlanner = (props: any) => {
      * Handler for clicking the "next" button in the scheduler.
      * Moves the view to the next time period and updates events.
      */
-    const nextClick = () => {
+    const nextClick = (schedulerData) => {
         schedulerData.next();
         updateViewStartEnd(schedulerData)
         // props.eventData.reload();
         schedulerData.setEvents(events);
-        // forceUpdateSchedulerData(schedulerData);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
@@ -343,7 +293,7 @@ const ReactPlanner = (props: any) => {
      * Updates the scheduler's date and reloads events.
      */
     const onSelectDate = (_schedulerData: SchedulerData, date: string) => {
-        schedulerData.setDate(date);
+        _schedulerData.setDate(date);
         updateViewStartEnd(schedulerData)
         // props.eventData.reload();
         schedulerData.setEvents(events);
@@ -357,12 +307,12 @@ const ReactPlanner = (props: any) => {
      * Updates the view and reloads events.
      */
     const onViewChange = (_schedulerData: SchedulerData, view: any) => {
-        schedulerData.setViewType(view.viewType);
+        _schedulerData.setViewType(view.viewType);
         // updateSchedulerWidth();
-        updateViewStartEnd(schedulerData)
+        updateViewStartEnd(_schedulerData)
         // props.eventData.reload();
-        schedulerData.setEvents(events);
-        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+        _schedulerData.setEvents(events);
+        dispatch({ type: 'UPDATE_SCHEDULER', payload: _schedulerData });
     };
 
     /**
@@ -461,17 +411,39 @@ const ReactPlanner = (props: any) => {
     const onToggleChange = (schedulerData) => {
         schedulerData.config.displayWeekend = !schedulerData.config.displayWeekend;
         schedulerData.setViewAfterSettingsUpdate();
-
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+
     };
 
     const onShiftCountChange = (schedulerData, shiftCount) => {
         schedulerData.config.shiftCount = Number(shiftCount);
-        schedulerData.config.shiftSlots = generateShiftSlots(shiftCount, dayStartFrom);
+        // schedulerData.config.shiftSlots = [
+        //     { start: '06:00', end: '14:00', label: 'Shift 1' },
+        //     { start: '14:00', end: '22:00', label: 'Shift 2' },
+        //     { start: '22:00', end: '06:00', label: 'Shift 3' },
+        // ];
+        // schedulerData.config.endHour = (8 * shiftCount) - 1;
+        // const behaviors = schedulerData?.behaviors;
+        // if (behaviors) {
+        // const baseDate = new Date();
+        // schedulerData.behaviors.getCustomDateFunc(schedulerData, 0, baseDate);
+        // }
         schedulerData.setViewAfterSettingsUpdate();
-
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
+
+    const onEventItemDoubleClick = (schedulerData: SchedulerData<EventItem>, event: any) => {
+        console.log("double cliked", event, schedulerData, event.id);
+    }
+
+    const onEventItemClick = (schedulerData: SchedulerData<EventItem>, event: any) => {
+        console.log("clicked", event, schedulerData, event.id);
+    }
+
+    const eventItemIconClick = (schedulerData: SchedulerData<EventItem>, event: any, iconType: any) => {
+        console.log('You clciked on event icon==>', iconType) // need to call mendix based on iconType
+        console.log("event data eventItemIconClick", event, schedulerData, event.id, iconType);
+    }
 
     // Render the planner and scheduler
     return (
@@ -485,9 +457,7 @@ const ReactPlanner = (props: any) => {
                             nextClick={nextClick}
                             onSelectDate={onSelectDate}
                             onViewChange={onViewChange}
-                            eventItemClick={(_schedulerData: SchedulerData<EventItem>, event: any) => {
-                                event.click();
-                            }}
+                            eventItemClick={onEventItemClick}
                             newEvent={(_, slotId, __, start, end) => { onNewEvent(slotId, start, end) }}
                             eventItemPopoverTemplateResolver={(_schedulerData: SchedulerData, event: any) => {
                                 return (<div>{props.popoverContent?.get(event.item)}</div>);
@@ -499,6 +469,8 @@ const ReactPlanner = (props: any) => {
                             updateEventEnd={updateEventEnd}
                             onToggleChange={onToggleChange}
                             onShiftCountChange={onShiftCountChange}
+                            eventItemDoubleClick={onEventItemDoubleClick}
+                            eventItemIconClick={eventItemIconClick}
                         />
                     </Col>
                 </Row>

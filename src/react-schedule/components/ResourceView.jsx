@@ -4,7 +4,9 @@ import React, { createElement } from 'react';
 
 function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, slotItemTemplateResolver, toggleExpandFunc }) {
   const { renderData } = schedulerData;
-  const width = schedulerData.getResourceTableWidth() - 2;
+  // const width = schedulerData.getResourceTableWidth() - 2;
+  const width = schedulerData.config.resourceTableWidth;
+
   const paddingBottom = contentScrollbarHeight;
   const displayRenderData = renderData.filter(o => o.render);
 
@@ -32,21 +34,21 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
     const slotCell = slotClickedFunc ? (
       <span className="slot-cell">
         {indents}
-        <button type="button" style={{ cursor: 'pointer' }} className="slot-text txt-btn-dis" onClick={() => slotClickedFunc(schedulerData, item)}>
+        <button type="button" style={{ cursor: 'pointer', width: width - 10 }} className="slot-text txt-btn-dis resource-slot" onClick={() => slotClickedFunc(schedulerData, item)}>
           {item.slotName}
         </button>
       </span>
     ) : (
       <span className="slot-cell">
         {indents}
-        <button type="button" className="slot-text txt-btn-dis" style={{ cursor: slotClickedFunc === undefined ? undefined : 'pointer' }}>
+        <button type="button" className="slot-text txt-btn-dis resource-slot" style={{ cursor: slotClickedFunc === undefined ? undefined : 'pointer', width: width - 10 }}>
           {item.slotName}
-        </button>
+        </button> 
       </span>
     );
 
     let slotItem = (
-      <div title={item.slotTitle || item.slotName} className="overflow-text header2-text" style={{ textAlign: 'center' }}>
+      <div title={item.slotTitle || item.slotName} className="overflow-text header2-text" style={{ textAlign: 'left' }}>
         {slotCell}
       </div>
     );

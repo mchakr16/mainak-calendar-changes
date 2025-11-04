@@ -163,8 +163,16 @@ class ResourceEvents extends Component {
     document.ondragstart = null;
 
     const startTime = headers[leftIndex].time;
-    let endTime = resourceEvents.headerItems[rightIndex - 1].end;
-    if (cellUnit !== CellUnit.Hour && viewType !== ViewType.Week) {
+
+    const lastHeader = resourceEvents.headerItems[rightIndex - 1];
+    let endTime = lastHeader ? lastHeader.end : undefined;
+    // let endTime = resourceEvents.headerItems[rightIndex - 1].end;
+    if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
+      const weekStartForLast = lastHeader ? new Date(lastHeader.start) : new Date(startTime);
+      endTime = localeDayjs(weekStartForLast).endOf('week').format(DATETIME_FORMAT);
+    }
+    // if (cellUnit !== CellUnit.Hour && viewType !== ViewType.Week && viewType !== ViewType.Quarter) {
+    if (viewType === ViewType.Month) {
       endTime = localeDayjs(new Date(resourceEvents.headerItems[rightIndex - 1].start))
         .hour(23).minute(59).second(59).format(DATETIME_FORMAT);
     }

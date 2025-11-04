@@ -86,7 +86,7 @@ const NewApp = () => {
             false,
             false,
             {
-                schedulerWidth: '85%',
+                schedulerWidth: '95%',
                 minuteStep: 60,
                 schedulerMaxHeight:400,
                 dayResourceTableWidth: 150,
@@ -270,7 +270,7 @@ const NewApp = () => {
         <div ref={plannerRef}>
             {state.showScheduler && (
                 <Row>
-                    <Col style={{ width: '85%' }}>
+                    <Col style={{ width: '95%' }}>
                         <Scheduler
                             schedulerData={state.viewModel}
                             prevClick={prevClick}

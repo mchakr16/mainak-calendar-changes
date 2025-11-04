@@ -6,20 +6,37 @@ import { ViewType } from '../config/default';
 function BodyView({ schedulerData }) {
   const { renderData, headers, config, behaviors, viewType } = schedulerData;
   const width = schedulerData.getContentCellWidth();
+  const shiftSlots = config.shiftSlots;
 
-  const shiftColorsMap = {
+  const shiftColors = {
     0: config.shiftOneBgColor,
     1: config.shiftTwoBgColor,
     2: config.shiftThirdBgColor,
+    3: config.noShiftColor
   };
+
+  const totalObjects = headers.length;
+  const objectsPerShift = Math.ceil(totalObjects / 3);
 
   const tableRows = renderData.filter(o => o.render)
     .map(({ slotId, groupOnly, rowHeight }) => {
       const rowCells = headers.map((header, index) => {
         const key = `${slotId}_${header.time}`;
         const style = { width };
-        if (viewType == ViewType.Week || viewType == ViewType.Custom) {
-          style.backgroundColor = shiftColorsMap[header.shiftIndex];
+        if (viewType == ViewType.Week) {
+          if (header.isShift === false && viewType == ViewType.Week) {
+            style.backgroundColor = config.noShiftColor;
+          } else {
+            style.backgroundColor = shiftColors[header.shiftIndex] || config.noShiftColor;
+          }
+        }
+
+        const shiftIndex = Math.floor(index / objectsPerShift);
+        const currentShift = shiftSlots[shiftIndex];
+        const isNoShift = !currentShift?.label || currentShift.label.trim() === '';
+
+        if (viewType === ViewType.Custom) {
+          style.backgroundColor = isNoShift ? config.noShiftColor : shiftColors[shiftIndex] || config.defaultShiftColor;
         }
         if (header.nonWorkingTime) {
           style.backgroundColor = config.nonWorkingTimeBodyBgColor;
