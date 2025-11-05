@@ -372,8 +372,40 @@ class ResourceEvents extends Component {
             const eventEnd = localeDayjs(evt.eventItem.end);
             const isStart = eventStart >= durationStart;
             const isEnd = eventEnd <= durationEnd;
+            let eventSpan = evt.span;
+            if (!isStart && isEnd) {
+              switch (cellUnit) {
+                case CellUnit.Hour:
+                  eventSpan = eventEnd.diff(durationStart, 'hour');
+                  break;
+                case CellUnit.Day:
+                  eventSpan = eventEnd.diff(durationStart, 'day');
+                  break;
+                case CellUnit.Week:
+                  eventSpan = Math.ceil(eventEnd.diff(durationStart, 'day') / 7);
+                  break;
+                default:
+                  eventSpan = eventEnd.diff(durationStart, 'day');
+                  break;
+              };
+            } else {
+              switch (cellUnit) {
+                case CellUnit.Hour:
+                  eventSpan = eventEnd.diff(eventStart, 'hour');
+                  break;
+                case CellUnit.Day:
+                  eventSpan = eventEnd.diff(eventStart, 'day');
+                  break;
+                case CellUnit.Week:
+                  eventSpan = Math.ceil(eventEnd.diff(eventStart, 'day') / 7);
+                  break;
+                default:
+                  eventSpan = eventEnd.diff(eventStart, 'day');
+                  break;
+              };
+            }
             const left = index * cellWidth + (index > 0 ? 2 : 3);
-            const width = evt.span * cellWidth - (index > 0 ? 5 : 6) > 0 ? evt.span * cellWidth - (index > 0 ? 5 : 6) : 0;
+            const width = eventSpan * cellWidth - (index > 0 ? 5 : 6) > 0 ? eventSpan * cellWidth - (index > 0 ? 5 : 6) : 0;
             const top = marginTop + idx * config.eventItemLineHeight;
             const eventKey = `ev-${index}-${idx}-${evt.eventItem.id ?? 'temp'}`;
             const eventItem = (
@@ -388,7 +420,7 @@ class ResourceEvents extends Component {
                 width={width}
                 top={top}
                 leftIndex={index}
-                rightIndex={index + evt.span}
+                rightIndex={index + eventSpan}
               />
             );
             eventList.push(eventItem);
