@@ -81,6 +81,54 @@ const reducer = (state, action) => {
 // }
 
 
+const formatShiftSlots = (mxShift) => {
+    if (!mxShift.length) return [];
+
+    const formatTime = (date: Date) => date.toISOString().substring(11, 16);
+
+    const sorted = [...mxShift].sort((a, b) => new Date(a.StartTime).getTime() - new Date(b.StartTime).getTime());
+
+    const slots: any[] = [];
+
+    const DAY_MINUTES = 24 * 60;
+
+    const toMinutes = (date: Date) => date.getUTCHours() * 60 + date.getUTCMinutes();
+
+    for (let i = 0; i < sorted.length; i++) {
+        const shift = sorted[i];
+        const start = new Date(shift.StartTime);
+        const end = new Date(shift.EndTime);
+
+        slots.push({ start: formatTime(start), end: formatTime(end), name: shift.Name });
+
+        const nextShift = sorted[(i + 1) % sorted.length];
+        const nextStart = new Date(nextShift.StartTime);
+
+        let gapStartMin = toMinutes(end);
+        let gapEndMin = toMinutes(nextStart);
+
+        if (gapEndMin <= gapStartMin) gapEndMin += DAY_MINUTES;
+
+        if (gapEndMin > gapStartMin) {
+            const gapStart = new Date(end);
+            const gapEnd = new Date(end);
+            gapEnd.setUTCMinutes(gapEnd.getUTCMinutes() + (gapEndMin - gapStartMin));
+
+            if (formatTime(gapStart) !== formatTime(gapEnd)) {
+                slots.push({ start: formatTime(gapStart), end: formatTime(gapEnd), name: '' });
+            }
+        }
+    }
+
+    slots.sort((a, b) => {
+        const [aH, aM] = a.start.split(':').map(Number);
+        const [bH, bM] = b.start.split(':').map(Number);
+        return aH * 60 + aM - (bH * 60 + bM);
+    });
+
+    return slots;
+};
+
 let schedulerData: any;
 
 const ReactPlanner = (props: any) => {
@@ -98,6 +146,32 @@ const ReactPlanner = (props: any) => {
     const dayStartFrom = props.dayStartFrom || 6; // update dayStartFrom props
     const SHIFT_COUNT = 3; // update shift count
     // const generatedSlots = generateShiftSlots(SHIFT_COUNT, dayStartFrom);
+    const mxShift = [
+        {
+            "ShiftId": 5,
+            "Name": "Shift1",
+            "StartTime": "2025-10-10T06:00:00.000Z",
+            "EndTime": "2025-10-10T14:00:00.000Z",
+            "changedDate": "2025-10-10T04:53:44.298Z",
+            "createdDate": "2025-10-10T04:53:17.797Z"
+        },
+        {
+            "ShiftId": 6,
+            "Name": "Shift2",
+            "StartTime": "2025-10-10T14:00:00.000Z",
+            "EndTime": "2025-10-10T22:00:00.000Z",
+            "changedDate": "2025-10-10T04:54:32.519Z",
+            "createdDate": "2025-10-10T04:54:06.204Z"
+        },
+        {
+            "ShiftId": 7,
+            "Name": "Shift3",
+            "StartTime": "2025-10-10T22:00:00.000Z",
+            "EndTime": "2025-10-11T06:00:00.000Z",
+            "changedDate": "2025-10-10T04:54:32.519Z",
+            "createdDate": "2025-10-10T04:54:06.204Z"
+        }
+    ]
 
     const schedulerDataRef = useRef(null);
 
@@ -134,11 +208,12 @@ const ReactPlanner = (props: any) => {
                     applyButtonType: 'primary',
                     applyButtonAlignment: 'center',
                 },
-                shiftSlots: [
-                    { start: '06:00', end: '14:00', label: 'Shift 1' },
-                    { start: '14:00', end: '22:00', label: 'Shift 2' },
-                    { start: '22:00', end: '06:00', label: 'Shift 3' },
-                ],
+                shiftSlots: formatShiftSlots(mxShift),
+                // [
+                //     { start: '06:00', end: '14:00', name: 'Shift 1' },
+                //     { start: '14:00', end: '22:00', name: 'Shift 2' },
+                //     { start: '22:00', end: '06:00', name: 'Shift 3' },
+                // ],
                 shiftCount: SHIFT_COUNT,
                 views: [
                     { viewName: 'Day', viewType: ViewType.Custom, showAgenda: false, isEventPerspective: false },
@@ -164,7 +239,7 @@ const ReactPlanner = (props: any) => {
 
         schedulerData.localeDayjs.locale('en-gb');
         schedulerDataRef.current = schedulerData;
-
+        console.log(formatShiftSlots(mxShift))
         dispatch({ type: 'INITIALIZE', payload: schedulerData });
     }, []);
 
@@ -254,7 +329,7 @@ const ReactPlanner = (props: any) => {
         // setResources(DemoData.resources);
 
         const newResourceList: any[] = DemoData.resources?.map((item) => {
-            const id = item.parentId ? `${item.id}.${item.parentId}` : item.id?.toString();
+            const id = item.id?.toString();
             const name = item.name?.toString();
             const parentId = item.parentId?.toString();
             const hasRealParent = parentId != null && parentId !== '' && parentId !== '0';
@@ -450,7 +525,7 @@ const ReactPlanner = (props: any) => {
         <div ref={plannerRef} >
             {state.showScheduler && (
                 <Row>
-                    <Col style={{ width: '95%' }}>
+                    <Col style={{ width: '100%' }}>
                         <Scheduler
                             schedulerData={state.viewModel}
                             prevClick={prevClick}

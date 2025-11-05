@@ -366,6 +366,7 @@ function Scheduler(props) {
       const numCells = schedulerData.headers.length;
       tableWidth = cellWidth * numCells;
     }
+
     const weekViewWidth = (schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Quarter) ?
       (7 * (schedulerData.config.shiftCount || 3) * 45) : tableWidth;
 
@@ -374,6 +375,9 @@ function Scheduler(props) {
       const weekdaysHeaders = schedulerData.config.displayWeekend ?
         Math.floor(schedulerData.headers.length * (5 / 7)) : schedulerData.headers.length;
       monthViewWidth = weekdaysHeaders * schedulerData.getContentCellWidth();
+      const el = document.querySelector('.scheduler-view');
+      const widthPx = el ? el.getBoundingClientRect().width : 0;
+      tableWidth = widthPx;
     }
 
     const DndResourceEvents = state.dndContext.getDropTarget(config.dragAndDropEnabled);
@@ -403,161 +407,160 @@ function Scheduler(props) {
       overflowY: 'auto',
       width: resourceTableWidth,
       margin: `0px -${contentScrollbarWidth}px 0px 0px`,
-      maxWidth: resourceTableWidth
+      maxWidth: resourceTableWidth,
+      scrollbarWidth: 'none'
+  };
+
+  if (config.schedulerMaxHeight > 0) {
+    schedulerContentStyle = {
+      ...schedulerContentStyle,
+      maxHeight: config.schedulerMaxHeight - config.tableHeaderHeight,
     };
+    resourceContentStyle = {
+      ...resourceContentStyle,
+      maxHeight: config.schedulerMaxHeight - config.tableHeaderHeight,
+    };
+  } else if (config.responsiveByParent && schedulerData.documentHeight > 0) {
+    // Responsive height minus SchedulerHeader
+    const availableHeight = schedulerData.getSchedulerHeight();
 
-    if (config.schedulerMaxHeight > 0) {
-      schedulerContentStyle = {
-        ...schedulerContentStyle,
-        maxHeight: config.schedulerMaxHeight - config.tableHeaderHeight,
-      };
-      resourceContentStyle = {
-        ...resourceContentStyle,
-        maxHeight: config.schedulerMaxHeight - config.tableHeaderHeight,
-      };
-    } else if (config.responsiveByParent && schedulerData.documentHeight > 0) {
-      // Responsive height minus SchedulerHeader
-      const availableHeight = schedulerData.getSchedulerHeight();
+    schedulerContentStyle = {
+      ...schedulerContentStyle,
+      height: availableHeight,
+    };
+    resourceContentStyle = {
+      ...resourceContentStyle,
+      height: availableHeight,
+    };
+  }
 
-      schedulerContentStyle = {
-        ...schedulerContentStyle,
-        height: availableHeight,
-      };
-      resourceContentStyle = {
-        ...resourceContentStyle,
-        height: availableHeight,
-      };
-    }
+  const resourceName = schedulerData.isEventPerspective ? config.taskName : config.resourceName;
 
-    const resourceName = schedulerData.isEventPerspective ? config.taskName : config.resourceName;
+  tbodyContent = (
+    <tr>
+      <td style={{ display: config.resourceViewEnabled ? undefined : 'none', width: resourceTableWidth, verticalAlign: 'top', maxWidth: 200 }}>
+        <div className="resource-view">
+          <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
+            <div style={{ overflowX: 'hidden', overflowY: 'auto', margin: `0px 0px -${contentScrollbarHeight}px` }}>
+              <table className="resource-table">
+                <thead>
+                  <tr style={{ height: config.tableHeaderHeight }}>
+                    <th className="header3-text resource-name">{resourceName}</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+          </div>
+          <div
+            style={resourceContentStyle}
+            ref={schedulerResourceRef}
+            onMouseOver={onSchedulerResourceMouseOver}
+            onFocus={onSchedulerResourceMouseOver}
+            onMouseOut={onSchedulerResourceMouseOut}
+            onBlur={onSchedulerResourceMouseOut}
+            onScroll={onSchedulerResourceScroll}
+          >
+            <ResourceView {...props} contentScrollbarHeight={resourcePaddingBottom} />
+          </div>
+        </div>
+      </td>
+      <td>
+        <div className="scheduler-view" style={{
+          width: schedulerData.viewType === ViewType.Month
+            ? Math.max(schedulerContainerWidth, monthViewWidth)
+            : (schedulerData.viewType === ViewType.Custom
+              || schedulerData.viewType === ViewType.Year
+              || schedulerData.viewType === ViewType.Quarter)
+              ? Math.max(schedulerContainerWidth, weekViewWidth)
+              : Math.max(schedulerContainerWidth, schedulerWidth),
+          verticalAlign: 'top',
+          // maxWidth: 1000
+        }}>
+          <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
 
-    tbodyContent = (
-      <tr>
-        <td style={{ display: config.resourceViewEnabled ? undefined : 'none', width: resourceTableWidth, verticalAlign: 'top', maxWidth: 200 }}>
-          <div className="resource-view">
-            <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
-              <div style={{ overflowX: 'hidden', overflowY: 'auto', margin: `0px 0px -${contentScrollbarHeight}px` }}>
-                <table className="resource-table">
-                  <thead>
-                    <tr style={{ height: config.tableHeaderHeight }}>
-                      <th className="header3-text resource-name">{resourceName}</th>
-                    </tr>
-                  </thead>
+            <div style={{ overflowX: 'scroll', overflowY: 'hidden', margin: `0px 0px -${contentScrollbarHeight}px` }}
+              ref={schedulerHeadRef}
+              onMouseOver={onSchedulerHeadMouseOver}
+              onFocus={onSchedulerHeadMouseOver}
+              onMouseOut={onSchedulerHeadMouseOut}
+              onBlur={onSchedulerHeadMouseOut}
+              onScroll={onSchedulerHeadScroll}
+              aria-label="Scheduler Header"
+            >
+              {/* <div style={{ paddingRight: `${contentScrollbarWidth}px`, width: tableWidth + contentScrollbarWidth }}> */}
+              <div style={{ paddingRight: `${contentScrollbarWidth}px` }}>
+                <table className="scheduler-bg-table" style={{
+                  width: tableWidth,
+                  tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
+                }}>
+                  <HeaderView {...props} />
                 </table>
               </div>
             </div>
-            <div
-              style={resourceContentStyle}
-              ref={schedulerResourceRef}
-              onMouseOver={onSchedulerResourceMouseOver}
-              onFocus={onSchedulerResourceMouseOver}
-              onMouseOut={onSchedulerResourceMouseOut}
-              onBlur={onSchedulerResourceMouseOut}
-              onScroll={onSchedulerResourceScroll}
-            >
-              <ResourceView {...props} contentScrollbarHeight={resourcePaddingBottom} />
-            </div>
           </div>
-        </td>
-        <td>
-          <div className="scheduler-view" style={{
-            width: schedulerData.viewType === ViewType.Month
-              ? Math.max(schedulerContainerWidth, monthViewWidth)
-              : (schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Quarter)
-                ? Math.max(schedulerContainerWidth, weekViewWidth)
-                : Math.max(schedulerContainerWidth, schedulerWidth),
-            verticalAlign: 'top'
-          }}>
-            <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
-
-              <div style={{ overflowX: 'scroll', overflowY: 'hidden', margin: `0px 0px -${contentScrollbarHeight}px` }}
-                ref={schedulerHeadRef}
-                onMouseOver={onSchedulerHeadMouseOver}
-                onFocus={onSchedulerHeadMouseOver}
-                onMouseOut={onSchedulerHeadMouseOut}
-                onBlur={onSchedulerHeadMouseOut}
-                onScroll={onSchedulerHeadScroll}
-                aria-label="Scheduler Header"
-              >
-                {/* <div style={{ paddingRight: `${contentScrollbarWidth}px`, width: tableWidth + contentScrollbarWidth }}> */}
-                <div style={{ paddingRight: `${contentScrollbarWidth}px` }}>
-                  <table className="scheduler-bg-table" style={{
-                    width: tableWidth,
-                    // minWidth: tableWidth,
-                    // maxWidth: tableWidth,
-                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
-                  }}>
-                    <HeaderView {...props} />
-                  </table>
-                </div>
+          <div
+            style={schedulerContentStyle}
+            ref={schedulerContentRef}
+            onMouseOver={onSchedulerContentMouseOver}
+            onFocus={onSchedulerContentMouseOver}
+            onMouseOut={onSchedulerContentMouseOut}
+            onBlur={onSchedulerContentMouseOut}
+            onScroll={onSchedulerContentScroll}
+          >
+            <div style={{ width: schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Week ? '100%' : schedulerData.viewType === ViewType.Year ? 'max-content' : tableWidth }}>
+              <div className="scheduler-content">
+                <table className="scheduler-content-table">
+                  <tbody>{resourceEventsList}</tbody>
+                </table>
               </div>
-            </div>
-            <div
-              style={schedulerContentStyle}
-              ref={schedulerContentRef}
-              onMouseOver={onSchedulerContentMouseOver}
-              onFocus={onSchedulerContentMouseOver}
-              onMouseOut={onSchedulerContentMouseOut}
-              onBlur={onSchedulerContentMouseOut}
-              onScroll={onSchedulerContentScroll}
-            >
-              {/* <div style={{ width: schedulerData.viewType === ViewType.Custom ? Math.max(schedulerContainerWidth, weekViewWidth) : tableWidth }}> */}
-              <div style={{ width: 'max-content' }}>
-                <div className="scheduler-content">
-                  <table className="scheduler-content-table">
-                    <tbody>{resourceEventsList}</tbody>
-                  </table>
-                </div>
-                <div className="scheduler-bg" style={{ paddingRight: `${contentScrollbarWidth}px` }}>
-                  <table className="scheduler-bg-table" style={{
-                    width: tableWidth,
-                    // minWidth: tableWidth,
-                    // maxWidth: tableWidth,
-                    tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
-                  }} ref={schedulerContentBgTableRef}>
-                    <BodyView {...props} />
-                  </table>
-                </div>
+              <div className="scheduler-bg" style={{ paddingRight: `${contentScrollbarWidth}px` }}>
+                <table className="scheduler-bg-table" style={{
+                  width: tableWidth,
+                  tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
+                }} ref={schedulerContentBgTableRef}>
+                  <BodyView {...props} />
+                </table>
               </div>
             </div>
           </div>
-        </td>
-      </tr >
-    );
-  }
-
-  const schedulerHeader = (
-    <SchedulerHeader
-      ref={schedulerHeaderRef}
-      style={{
-        display: config.headerEnabled ? undefined : 'none',
-        marginBottom: config.headerEnabled ? '24px' : undefined,
-      }}
-      onViewChange={handleViewChange}
-      onToggleChange={handleToggleChange}
-      onShiftCountChange={handleShiftCountChange}
-      onZoomIn={handleZoomIn}
-      onZoomOut={handleZoomOut}
-      onResetZoom={handleResetZoom}
-      schedulerData={schedulerData}
-      onSelectDate={onSelect}
-      goNext={goNext}
-      goBack={goBack}
-      rightCustomHeader={rightCustomHeader}
-      leftCustomHeader={leftCustomHeader}
-    />
+        </div>
+      </td>
+    </tr >
   );
+}
 
-  return (
-    <table id="RBS-Scheduler-root" className="react-big-schedule" style={{ width: `${width}px` }}>
-      <thead>
-        <tr>
-          <td colSpan="2">{schedulerHeader}</td>
-        </tr>
-      </thead>
-      <tbody>{tbodyContent}</tbody>
-    </table>
-  );
+const schedulerHeader = (
+  <SchedulerHeader
+    ref={schedulerHeaderRef}
+    style={{
+      display: config.headerEnabled ? undefined : 'none',
+      marginBottom: config.headerEnabled ? '24px' : undefined,
+    }}
+    onViewChange={handleViewChange}
+    onToggleChange={handleToggleChange}
+    onShiftCountChange={handleShiftCountChange}
+    onZoomIn={handleZoomIn}
+    onZoomOut={handleZoomOut}
+    onResetZoom={handleResetZoom}
+    schedulerData={schedulerData}
+    onSelectDate={onSelect}
+    goNext={goNext}
+    goBack={goBack}
+    rightCustomHeader={rightCustomHeader}
+    leftCustomHeader={leftCustomHeader}
+  />
+);
+
+return (
+  <table id="RBS-Scheduler-root" className="react-big-schedule" style={{ width: `${width}px` }}>
+    <thead>
+      <tr>
+        <td colSpan="2">{schedulerHeader}</td>
+      </tr>
+    </thead>
+    <tbody>{tbodyContent}</tbody>
+  </table>
+);
 }
 
 Scheduler.propTypes = {

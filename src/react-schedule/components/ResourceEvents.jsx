@@ -85,17 +85,17 @@ class ResourceEvents extends Component {
 
     const { schedulerData } = this.props;
     let cellWidth = schedulerData.getContentCellWidth();
-    
-    if (schedulerData.viewType === ViewType.Month || 
-        schedulerData.viewType === ViewType.Year ||
-        (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
-      
+
+    // if (schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Quarter ||
+    //   schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Week ||
+    //   (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
+
       const headerTable = document.querySelector('.scheduler-bg-table');
       if (headerTable && schedulerData.headers && schedulerData.headers.length > 0) {
         const actualTableWidth = headerTable.offsetWidth;
         const numCells = schedulerData.headers.length;
         const calculatedCellWidth = actualTableWidth / numCells;
-        
+
         if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
           cellWidth = calculatedCellWidth;
         } else {
@@ -105,8 +105,8 @@ class ResourceEvents extends Component {
           }
         }
       }
-    }
-    
+    // }
+
     const pos = getPos(this.eventContainer);
     const startX = clientX - pos.x;
     const leftIndex = Math.floor(startX / cellWidth);
@@ -140,17 +140,17 @@ class ResourceEvents extends Component {
     const { schedulerData } = this.props;
     const { headers } = schedulerData;
     let cellWidth = schedulerData.getContentCellWidth();
-    
-    if (schedulerData.viewType === ViewType.Month || 
-        schedulerData.viewType === ViewType.Year ||
-        (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
-      
+
+    // if (schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Quarter ||
+    //   schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Week ||
+    //   (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
+
       const headerTable = document.querySelector('.scheduler-bg-table');
       if (headerTable && headers && headers.length > 0) {
         const actualTableWidth = headerTable.offsetWidth;
         const numCells = headers.length;
         const calculatedCellWidth = actualTableWidth / numCells;
-        
+
         if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
           cellWidth = calculatedCellWidth;
         } else {
@@ -160,8 +160,8 @@ class ResourceEvents extends Component {
           }
         }
       }
-    }
-    
+    // }
+
     const pos = getPos(this.eventContainer);
     const currentX = clientX - pos.x;
     let leftIndex = Math.floor(Math.min(startX, currentX) / cellWidth);
@@ -322,12 +322,34 @@ class ResourceEvents extends Component {
 
   render() {
     const { resourceEvents, schedulerData, connectDropTarget, dndSource } = this.props;
-    const { cellUnit, startDate, endDate, config, localeDayjs } = schedulerData;
+    const { cellUnit, startDate, endDate, config, localeDayjs, headers } = schedulerData;
     const { isSelecting, left, width } = this.state;
-    const cellWidth = schedulerData.getContentCellWidth();
+    // const cellWidth = schedulerData.getContentCellWidth();
     const cellMaxEvents = schedulerData.getCellMaxEvents();
     const rowWidth = schedulerData.getContentTableWidth();
     const DnDEventItem = dndSource.getDragSource();
+    let cellWidth = schedulerData.getContentCellWidth();
+
+    // if (schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Quarter ||
+    //   schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Week ||
+    //   (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
+
+      const headerTable = document.querySelector('.scheduler-bg-table');
+      if (headerTable && headers && headers.length > 0) {
+        const actualTableWidth = headerTable.offsetWidth;
+        const numCells = headers.length;
+        const calculatedCellWidth = actualTableWidth / numCells;
+
+        if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
+          cellWidth = calculatedCellWidth;
+        } else {
+          const cells = headerTable.querySelectorAll('th');
+          if (cells.length > 0) {
+            cellWidth = cells[0].offsetWidth;
+          }
+        }
+      }
+    // }
 
     const selectedArea = isSelecting ? <SelectedArea {...this.props} left={left} width={width} /> : <div />;
 

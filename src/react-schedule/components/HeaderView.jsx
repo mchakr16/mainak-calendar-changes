@@ -33,7 +33,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
       item.shiftIndex = Math.floor(index / objectsPerShift);
 
       const currentShift = shiftSlots[item.shiftIndex];
-      const isNoShift = !currentShift?.label || currentShift.label.trim() === '';
+      const isNoShift = !currentShift?.name || currentShift.name.trim() === '';
 
       if (index % minuteStepsInHour === 0) {
         const datetime = localeDayjs(new Date(item.time));
@@ -138,7 +138,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
 
       let pList;
       if (viewType === ViewType.Week) {
-        pList = <div key={index}>{item.shift.label}</div>
+        pList = <div key={index}>{item.shift.name}</div>
       } else {
         pList = pFormattedList.map((formattedItem, pIndex) => (
           <div key={pIndex}>{formattedItem}</div>
@@ -251,7 +251,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
 
         const shiftLabels = shiftSlots.map((shift, shiftIndex) => (
           <td key={`shift-label-${shiftIndex}`} colSpan={objectsPerShift} align="center">
-            {shift.label || ''}
+            {shift.name || ''}
           </td>
         ));
 

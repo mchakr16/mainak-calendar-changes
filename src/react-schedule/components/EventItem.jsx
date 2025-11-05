@@ -5,9 +5,16 @@
 import { Popover } from 'antd';
 import { PropTypes } from 'prop-types';
 import React, { Component, createElement } from 'react';
-import { CellUnit, DATETIME_FORMAT, DnDTypes, ViewType, IconType } from '../config/default';
+import { CellUnit, DATETIME_FORMAT, DATE_FORMAT, DnDTypes, ViewType, IconType } from '../config/default';
 import EventItemPopover from './EventItemPopover';
-import { InfoCircleFilled, WarningFilled, CheckCircleFilled } from '@ant-design/icons';
+import { InfoCircleFilled, WarningFilled, RetweetOutlined } from '@ant-design/icons';
+
+import dayjs from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 const stopDragHelper = ({ count, cellUnit, config, dragType, eventItem, localeDayjs, value, viewType }) => {
   const whileTrue = true;
@@ -16,7 +23,7 @@ const stopDragHelper = ({ count, cellUnit, config, dragType, eventItem, localeDa
   let result = value;
   return new Promise(resolve => {
     if (count !== 0 && cellUnit !== CellUnit.Hour && config.displayWeekend === false) {
-      if (viewType === ViewType.Week || viewType === ViewType.Quarter || viewType === ViewType.Year) {
+      if (viewType === ViewType.Week || viewType === ViewType.Quarter || viewType === ViewType.Year || viewType === ViewType.Month) {
         resolve(result);
         return;
       }
@@ -175,7 +182,7 @@ class EventItem extends Component {
     } else {
       clientX = ev.clientX;
     }
-    const { cellUnit, events, config, localeDayjs, viewType } = schedulerData;
+    const { cellUnit, events, config, localeDayjs, viewType, headers } = schedulerData;
     const cellWidth = schedulerData.getContentCellWidth();
     const offset = leftIndex > 0 ? 5 : 6;
     const minWidth = cellWidth - offset;
@@ -199,11 +206,18 @@ class EventItem extends Component {
     if (cellUnit === CellUnit.Hour) {
       newStart = localeDayjs(new Date(eventItem.start)).add(count * config.minuteStep, 'minutes').format(DATETIME_FORMAT);
     } else if (viewType === ViewType.Week) {
-      newStart = localeDayjs(new Date(eventItem.start)).add(count * 24 / config.shiftCount, 'hours').format(DATETIME_FORMAT);
+      const eventStart = new Date(eventItem.start);
+
+      const headerForStart = headers.find(h =>
+        localeDayjs(eventStart).isSameOrAfter(localeDayjs(h.start)) &&
+        localeDayjs(eventStart).isBefore(localeDayjs(h.end)));
+
+      const headerStartTime = headerForStart ? headerForStart.start : headers[0].start;
+      newStart = localeDayjs(new Date(headerStartTime)).add(count * 8, 'hours').format(DATETIME_FORMAT);
     } else if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
-      newStart = localeDayjs(new Date(eventItem.start)).startOf('week').format(DATETIME_FORMAT);
+      newStart = localeDayjs(new Date(eventItem.start)).startOf('week').format(DATE_FORMAT);
     } else {
-      newStart = localeDayjs(new Date(eventItem.start)).add(count, 'days').format(DATETIME_FORMAT);
+      newStart = localeDayjs(new Date(eventItem.start)).add(count, 'days').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
     }
 
     newStart = await stopDragHelper({
@@ -340,11 +354,18 @@ class EventItem extends Component {
     if (cellUnit === CellUnit.Hour) {
       newEnd = localeDayjs(new Date(eventItem.end)).add(count * config.minuteStep, 'minutes').format(DATETIME_FORMAT);
     } else if (viewType === ViewType.Week) {
-      newEnd = localeDayjs(new Date(eventItem.end)).add(count * 24 / config.shiftCount, 'hours').format(DATETIME_FORMAT);
+      const eventEnd = new Date(eventItem.end);
+      const headerEnd = headers.find((h) =>
+        localeDayjs(eventEnd).isAfter(localeDayjs(h.start)) &&
+        localeDayjs(eventEnd).isSameOrBefore(localeDayjs(h.end)));
+
+      const headerEndTime = headerEnd ? headerEnd.end : null;
+      newEnd = localeDayjs(new Date(headerEndTime)).add(count * 8, 'hours').format(DATETIME_FORMAT);
     } else if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
-      newEnd = localeDayjs(new Date(eventItem.end)).endOf('week').format(DATETIME_FORMAT);
+      newEnd = localeDayjs(new Date(eventItem.end)).endOf('week').format(DATE_FORMAT);
     } else {
-      newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').format(DATETIME_FORMAT);
+      // newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').format(DATE_FORMAT);
+      newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
     }
     newEnd = await stopDragHelper({
       dragType: 'end',
@@ -476,7 +497,7 @@ class EventItem extends Component {
           {eventItem.hasConstraint && (
             <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Constraint) }}><WarningFilled /></span>)}
           {eventItem.isRecurrent && (
-            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Recurrent) }}><CheckCircleFilled /></span>)}
+            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Recurrent) }}><RetweetOutlined /></span>)}
         </div>
         <div className='event-title'><span style={{ marginLeft: '5px', lineHeight: `${config.eventItemHeight}px` }} >{eventTitle}</span></div>
       </div>

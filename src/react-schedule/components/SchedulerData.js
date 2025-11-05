@@ -1049,7 +1049,7 @@ export default class SchedulerData {
               shiftIndex: index,
               nonWorkingTime: nonWorkingTime,
               id: `${dayTime}-shift-${index}`,
-              isShift: shift.label !== ''  //forSH
+              isShift: shift.name !== ''  //forSH
             });
           });
         };

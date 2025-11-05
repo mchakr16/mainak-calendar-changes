@@ -33,7 +33,7 @@ function BodyView({ schedulerData }) {
 
         const shiftIndex = Math.floor(index / objectsPerShift);
         const currentShift = shiftSlots[shiftIndex];
-        const isNoShift = !currentShift?.label || currentShift.label.trim() === '';
+        const isNoShift = !currentShift?.name || currentShift.name.trim() === '';
 
         if (viewType === ViewType.Custom) {
           style.backgroundColor = isNoShift ? config.noShiftColor : shiftColors[shiftIndex] || config.defaultShiftColor;
