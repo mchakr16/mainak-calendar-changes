@@ -81,15 +81,17 @@ const DemoData = {
     events: [
         {
             "id": "97",
-            "start": "Tue Nov 04 2025 06:00:00 GMT+0530 (India Standard Time)",
-            "end": "Tue Nov 04 2025 16:00:00 GMT+0530 (India Standard Time)",
+            "start": "Tue Nov 04 2025 10:00:00 GMT+0530 (India Standard Time)",
+            "end": "Tue Nov 04 2025 20:00:00 GMT+0530 (India Standard Time)",
             "resourceId": "17256922",
             "title": "Ram Hier-PO-V1",
             "bgColor": "Blue",
             "item": {
                 "id": "21955048183985086"
             },
-            "resizable": false
+            "resizable": true,
+            isRecurrent: true,
+            hasConstraint: true
         },
         {
             "id": "99",
@@ -101,7 +103,7 @@ const DemoData = {
             "item": {
                 "id": "21955048183985376"
             },
-            "resizable": false
+            "resizable": true
         },
         {
             "id": "627",

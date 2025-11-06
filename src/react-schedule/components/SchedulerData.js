@@ -6,6 +6,8 @@ import { RRuleSet, rrulestr } from 'rrule';
 import { CellUnit, DATE_FORMAT, DATETIME_FORMAT, ViewType } from '../config/default';
 import config from '../config/scheduler';
 import behaviors from '../helper/behaviors';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import minMax from 'dayjs/plugin/minMax';
 
 export default class SchedulerData {
   constructor(date = dayjs(), viewType = ViewType.Week, showAgenda = false, isEventPerspective = false, newConfig = undefined, newBehaviors = undefined) {
@@ -42,6 +44,8 @@ export default class SchedulerData {
     dayjs.extend(quarterOfYear);
     dayjs.extend(weekday);
     dayjs.extend(utc);
+    dayjs.extend(isoWeek);
+    dayjs.extend(minMax);
     this.localeDayjs = dayjs;
     this.config = newConfig === undefined ? config : { ...config, ...newConfig };
     this._validateMinuteStep(this.config.minuteStep);
@@ -1277,8 +1281,24 @@ export default class SchedulerData {
           span = Math.ceil(timeBetween(eventStart, eventEnd, 'minutes') / this.config.minuteStep);
         }
       }
+    } else if (this.viewType === ViewType.Custom) {
+
+      const timeIn = 'minutes';
+      const dividedBy = this.config.minuteStep;
+
+      if (new Date(this.startDate) >= eventStart && eventEnd <= new Date(this.endDate)) {
+        span = Math.ceil(timeBetween(new Date(this.startDate), eventEnd, timeIn) / dividedBy);
+      } else if (new Date(this.startDate) > eventStart && eventEnd > new Date(this.endDate)) {
+        span = Math.ceil(timeBetween(new Date(this.startDate), new Date(this.endDate), timeIn) / dividedBy) + 1;
+      } else if (new Date(this.startDate) <= eventStart && eventEnd >= new Date(this.endDate)) {
+        // span = Math.ceil(timeBetween(eventStart, new Date(this.endDate), timeIn) / dividedBy); // next day
+        span = Math.ceil(timeBetween(eventStart, eventEnd, timeIn) / dividedBy);
+      } else {
+        span = Math.ceil(timeBetween(eventStart, eventEnd, timeIn) / dividedBy);
+      }
+
     } else if (this.viewType === ViewType.Week || this.viewType === ViewType.Month || this.viewType === ViewType.Quarter || this.viewType === ViewType.Year) {
-      if (this.viewType === ViewType.Week && headers && headers.length) {
+      if (this.viewType === ViewType.Week) {
         let overlapped = 0;
         for (let h of headers) {
           const hStart = new Date(h.start);
@@ -1287,10 +1307,49 @@ export default class SchedulerData {
         }
         span = overlapped;
         if (span < 1) span = 1;
+      } else if (this.viewType === ViewType.Quarter || this.viewType === ViewType.Year) {
+        const start = this.localeDayjs(eventStart).startOf('day');
+        const end = this.localeDayjs(eventEnd).startOf('day');
+        const startWeek = start.startOf('week');
+        const endWeek = end.startOf('week');
+        const diffWeeks = endWeek.diff(startWeek, 'week') + 1;
+        span = Math.max(1, diffWeeks);
       } else {
-        const startDate = windowStart < eventStart ? eventStart : windowStart;
-        const endDate = windowEnd > eventEnd ? eventEnd : windowEnd;
-        span = Math.ceil(timeBetween(startDate, endDate, 'days'));
+        // const s = dayjs(eventStart).startOf('day');
+        // const e = dayjs(eventEnd).startOf('day');
+        // const ws = dayjs(windowStart).startOf('day');
+        // const we = dayjs(windowEnd).startOf('day');
+
+        // const start = s.isAfter(ws) ? s : ws;
+        // const end = e.isBefore(we) ? e : we;
+
+        // if (end.isBefore(start)) { span = 0; }
+        // else if (this.config.displayWeekend) {
+        //   span = end.diff(start, 'day') + 1;
+        // } else {
+        //   const total = end.diff(start, 'day') + 1;
+        //   const fullWeeks = Math.floor(total / 7);
+        //   let weekdays = fullWeeks * 5;
+        //   const rem = total % 7;
+        //   const startDow = start.day();
+        //   for (let i = 0; i < rem; i++) {
+        //     const dow = (startDow + i) % 7;
+        //     if (dow !== 0 && dow !== 6) weekdays++;
+        //   }
+        //   span = weekdays;
+        // }
+        const start = this.localeDayjs.max(this.localeDayjs(eventStart).startOf('day'), this.localeDayjs(windowStart).startOf('day'));
+        const end = this.localeDayjs.min(this.localeDayjs(eventEnd).startOf('day'), this.localeDayjs(windowEnd).startOf('day'));
+        if (end.isBefore(start)) { span = 0; return; }
+
+        if (this.config.displayWeekend) {
+          span = end.diff(start, 'day') + 1;
+        } else {
+          let count = 0;
+          for (let d = start; !d.isAfter(end); d = d.add(1, 'day'))
+            if (![0, 6].includes(d.day())) count++;
+          span = count;
+        }
       }
     } else {
       if (this.cellUnit === CellUnit.Day) {

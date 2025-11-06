@@ -201,7 +201,7 @@ const ReactPlanner = (props: any) => {
                 monthCellWidth: 45,
                 quarterCellWidth: 75,
                 customCellWidth: 40,
-                defaultExpanded: false,
+                defaultExpanded: true,
                 // endHour: 15,
                 calenderConfig: {
                     applyButtonText: 'Apply',
@@ -239,7 +239,7 @@ const ReactPlanner = (props: any) => {
 
         schedulerData.localeDayjs.locale('en-gb');
         schedulerDataRef.current = schedulerData;
-        console.log(formatShiftSlots(mxShift))
+        // console.log(formatShiftSlots(mxShift))
         dispatch({ type: 'INITIALIZE', payload: schedulerData });
     }, []);
 
@@ -296,7 +296,7 @@ const ReactPlanner = (props: any) => {
                 bgColor: props.eventColorAttr ? props.eventColorAttr.get(item).value : defaultEventColor,
                 click: () => onItemClick(item),
                 item: item,
-                resizable: props.eventResourceAttr.get(item).value?.includes('.')
+                resizable: Boolean(props.eventResizableAttr.get(item)?.value),
             });
         });
         setEvents(DemoData.events);
@@ -492,17 +492,44 @@ const ReactPlanner = (props: any) => {
 
     const onShiftCountChange = (schedulerData, shiftCount) => {
         schedulerData.config.shiftCount = Number(shiftCount);
-        // schedulerData.config.shiftSlots = [
-        //     { start: '06:00', end: '14:00', label: 'Shift 1' },
-        //     { start: '14:00', end: '22:00', label: 'Shift 2' },
-        //     { start: '22:00', end: '06:00', label: 'Shift 3' },
-        // ];
         // schedulerData.config.endHour = (8 * shiftCount) - 1;
         // const behaviors = schedulerData?.behaviors;
         // if (behaviors) {
         // const baseDate = new Date();
         // schedulerData.behaviors.getCustomDateFunc(schedulerData, 0, baseDate);
         // }
+        const BASE_SHIFTS = [
+            {
+                ShiftId: 5,
+                Name: "Shift1",
+                StartTime: "2025-10-10T06:00:00.000Z",
+                EndTime: "2025-10-10T14:00:00.000Z",
+                changedDate: "2025-10-10T04:53:44.298Z",
+                createdDate: "2025-10-10T04:53:17.797Z"
+            },
+            {
+                ShiftId: 6,
+                Name: "Shift2",
+                StartTime: "2025-10-10T14:00:00.000Z",
+                EndTime: "2025-10-10T22:00:00.000Z",
+                changedDate: "2025-10-10T04:54:32.519Z",
+                createdDate: "2025-10-10T04:54:06.204Z"
+            }
+        ];
+
+        const EXTRA_SHIFTS = [
+            {
+                ShiftId: 7,
+                Name: "Shift3",
+                StartTime: "2025-10-10T22:00:00.000Z",
+                EndTime: "2025-10-11T06:00:00.000Z",
+                changedDate: "2025-10-10T04:54:32.519Z",
+                createdDate: "2025-10-10T04:54:06.204Z"
+            }
+        ];
+
+        const shifts = Number(shiftCount) === 2 ? BASE_SHIFTS : [...BASE_SHIFTS, ...EXTRA_SHIFTS];
+        schedulerData.config.shiftSlots = formatShiftSlots(shifts);
         schedulerData.setViewAfterSettingsUpdate();
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };

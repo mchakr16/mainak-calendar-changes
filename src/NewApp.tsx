@@ -151,7 +151,7 @@ const NewApp = () => {
 
         schedulerData.localeDayjs.locale('en-gb');
         schedulerData.setResources(DemoData.resources);
-        schedulerData.setEvents(DemoData.eventsForTaskView);
+        // schedulerData.setEvents(DemoData.eventsForTaskView);
 
         dispatch({ type: 'INITIALIZE', payload: schedulerData });
 
@@ -167,13 +167,13 @@ const NewApp = () => {
 
     const prevClick = (schedulerData) => {
         schedulerData.prev();
-        schedulerData.setEvents(DemoData.eventsForTaskView);
+        // schedulerData.setEvents(DemoData.eventsForTaskView);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
     const nextClick = (schedulerData) => {
         schedulerData.next();
-        schedulerData.setEvents(DemoData.eventsForTaskView);
+        // schedulerData.setEvents(DemoData.eventsForTaskView);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
@@ -184,14 +184,14 @@ const NewApp = () => {
             view.isEventPerspective
         );
         schedulerData.config.creatable = !view.isEventPerspective;
-        schedulerData.setEvents(DemoData.eventsForTaskView);
+        // schedulerData.setEvents(DemoData.eventsForTaskView);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 
     const onSelectDate = (schedulerData, date) => {
         schedulerData.setDate(date);
         sessionStorage.setItem('selectedSchedulerDate', date);
-        schedulerData.setEvents(DemoData.eventsForTaskView);
+        // schedulerData.setEvents(DemoData.eventsForTaskView);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     };
 

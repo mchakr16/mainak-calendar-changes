@@ -330,7 +330,25 @@ class EventItem extends Component {
     }
     const { headers, cellUnit, events, config, localeDayjs, viewType } = schedulerData;
 
-    const cellWidth = schedulerData.getContentCellWidth();
+    // const cellWidth = schedulerData.getContentCellWidth();
+
+    let cellWidth = schedulerData.getContentCellWidth();
+
+    const headerTable = document.querySelector('.scheduler-bg-table');
+    if (headerTable && headers && headers.length > 0) {
+      const actualTableWidth = headerTable.offsetWidth;
+      const numCells = headers.length;
+      const calculatedCellWidth = actualTableWidth / numCells;
+
+      if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
+        cellWidth = calculatedCellWidth;
+      } else {
+        const cells = headerTable.querySelectorAll('th');
+        if (cells.length > 0) {
+          cellWidth = cells[0].offsetWidth;
+        }
+      }
+    }
     const offset = leftIndex > 0 ? 5 : 6;
     const minWidth = cellWidth - offset;
     const maxWidth = (headers.length - leftIndex) * cellWidth - offset;
