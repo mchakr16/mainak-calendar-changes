@@ -44,6 +44,7 @@ const SchedulerHeader = React.forwardRef(({
   const shiftCount = schedulerData.config.shiftCount;
   const defaultValue = `${viewType}${showAgenda ? 1 : 0}${isEventPerspective ? 1 : 0}`;
   const [isToggleChecked, setIsToggleChecked] = useState(displayWeekend);
+ // console.log('schedulerData.config.displayWeekend ==>',schedulerData.config.displayWeekend)
   const defaultViewValue = Boolean(config.setDefaultViewValue);
   const [isDefaultViewValue, setDefaultViewValue] = useState(defaultViewValue);
 
@@ -51,6 +52,8 @@ const SchedulerHeader = React.forwardRef(({
     setIsToggleChecked(!isToggleChecked);
     handleEvents(onToggleChange, true, event)
   };
+
+
 
   useEffect(() => {
     setDefaultViewValue(Boolean(config.setDefaultViewValue));

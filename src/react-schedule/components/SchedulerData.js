@@ -892,6 +892,7 @@ export default class SchedulerData {
   }
 
   _resolveDate(num, date = undefined) {
+    console.log("date coming", date)
     if (date !== undefined) {
       this.selectDate = this.localeDayjs(date);
     }
@@ -941,6 +942,7 @@ export default class SchedulerData {
       case ViewType.Custom2:
         if (this.behaviors.getCustomDateFunc !== undefined) {
           const customDate = this.behaviors.getCustomDateFunc(this, num, date);
+          
           this.startDate = this.localeDayjs(customDate.startDate);
           this.endDate = this.localeDayjs(customDate.endDate);
 

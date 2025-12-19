@@ -212,62 +212,68 @@ const ReactPlanner = (props: any) => {
                     },
                     getCustomDateFunc: (_schedData, num, baseDate) => {
 
+                       
+                        console.log("baseDate came from Scheduler Data===>", baseDate, typeof baseDate);
+                         console.log("_schedData.startDate==>", _schedData.startDate);
+                        
                         const currentViewType = _schedData.viewType;
                         const base = baseDate ? dayjs(baseDate) : (dayjs(_schedData.startDate) || dayjs());
 
-                        console.log("base  ===>", base.toDate());
+                        console.log("base computed in React Planner ===>", base.toDate());
                         if (currentViewType === ViewType.Custom) {
                             const startDate = dayjs(base).add(num, 'day').hour(Number(dayStartFrom)).minute(0).second(0);
                             const endDate = startDate.add(23, 'hour');
                             return { startDate, endDate, cellUnit: CellUnit.Hour };
                         }
                         if (currentViewType === ViewType.Custom1) {
-
+ 
                             const showWeekend = schedulerData?.config?.displayWeekend ?? false;
                             const customCountDays = schedulerData?.config?.customCountDays ?? 1;
-                            const dayShift = schedulerData.config.customNavDirection === '' ? 0 : schedulerData.config.customNavDirection === 'right' ? customCountDays : - customCountDays;// num < 0 ? -1 : 1;
+                            const navDirection = schedulerData?.config.customNavDirection;
+                           
+                            let dayShift = navDirection === '' ? 0 : navDirection === 'right' ? customCountDays : - customCountDays;// num < 0 ? -1 : 1;
+
+                            // condition added if date is selected from calender then we are not adding day 
+                             if(typeof baseDate == 'string'){
+                                 dayShift = 0;
+                            } 
                             const anchorDay = base.date();
-                            console.log('anchr days in custoum view', anchorDay);
+                            console.log('Base Date Anchor Day===>', anchorDay);
                             const anchorMonth = dayjs(base).startOf('month').add(num, 'month');
                             const clampToMonth = (month, day) => {
                                 const dim = month.daysInMonth();
                                 const safeDay = Math.min(Math.max(1, day), dim);
                                 return month.date(safeDay);
                             };
-                            console.log("weekened flag value", showWeekend);
+                   
                             // Helper to move one working day forward/backward (skips Sat/Sun)
-                            const shiftToNextWorkingDay = (d, direction) => {
+                            const shiftToNextWorkingDay = (d, direction, calledBy) => {
                                 // direction: +1 or -1
                                 let candidate = d.add(direction, 'day');
-                                console.log("cashiftToNextWorkingDay calling  ", d.toDate(), direction);
+                              //  console.log("cashiftToNextWorkingDay calling  ", d.toDate(), direction);
                                 let attempts = 0;
                                 while ((candidate.day() === 0 || candidate.day() === 6) && attempts < 7) {
                                     candidate = candidate.add(direction, 'day');
-                                    console.log("candidate.day()", candidate.day())
+                                  //  console.log("candidate.day()", candidate.day())
                                     attempts++;
                                 }
                                 return candidate;
                             };
-
-                           
-
                             // compute start anchor (clamped) and then shift by 1 day or to next working day
                             const startAnchor = clampToMonth(anchorMonth, anchorDay).startOf('day');
-
-                            console.log('startAnchor', startAnchor)
-                            const startDate = showWeekend
-                                ? startAnchor.add(dayShift, 'day')
-                                : shiftToNextWorkingDay(startAnchor, dayShift).startOf('day');
-
-                            console.log('start date ', startDate)
-
-                            // compute end anchor in next month, then shift similarly and make it endOf('day')
                             const nextMonth = anchorMonth.add(1, 'month');
                             const endAnchor = clampToMonth(nextMonth, anchorDay).endOf('day');
-                            const endDate = showWeekend
-                                ? endAnchor.add(dayShift, 'day').endOf('day')
-                                : shiftToNextWorkingDay(endAnchor, dayShift).endOf('day');
+                            let startDate, endDate;
+                            if(showWeekend){
+                                   startDate =  startAnchor.add(dayShift, 'day')
+                                   endDate  =   endAnchor.add(dayShift, 'day').endOf('day')
+                            }else{
 
+                                 startDate =  startAnchor.add(dayShift, 'day')
+                                   endDate  =   endAnchor.add(dayShift, 'day').endOf('day')
+                                // startDate = shiftToNextWorkingDay(startAnchor, dayShift,'startDate').startOf('day');
+                                // endDate =  shiftToNextWorkingDay(endAnchor, dayShift,'endDate').endOf('day');
+                            }
                             return { startDate, endDate, cellUnit: CellUnit.Day };
 
                         }
@@ -402,9 +408,11 @@ const ReactPlanner = (props: any) => {
      * Handler for selecting a date in the scheduler.
      * Updates the scheduler's date and reloads events.
      */
-    const onSelectDate = (_schedulerData: SchedulerData, date: string) => {
-        _schedulerData.setDate(date);
+    const onSelectDate = (schedulerData: SchedulerData, date: string) => {
+        schedulerData.setDate(date);
         updateViewStartEnd(schedulerData);
+        
+        
         // props.eventData.reload();
         schedulerData.setEvents(events);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
@@ -612,6 +620,8 @@ const ReactPlanner = (props: any) => {
     }, [schedulerData]);
 
     const customNavArrowClick = (schedulerData, value) => {
+
+        
         const element = document.querySelector('.scheduler-main');
         if (value === 'right') {
             schedulerData.config.customNavDirection = 'right';
@@ -628,6 +638,7 @@ const ReactPlanner = (props: any) => {
             });
 
         }
+        //schedulerData.config.displayWeekend = true;
         schedulerData.update();
         schedulerData.setEvents(events);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
