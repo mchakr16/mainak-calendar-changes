@@ -9,5 +9,6 @@ export {
   SchedulerData,
   SummaryPos,
   ViewType,
+  IconType,
   wrapperFun,
 } from './components/index';

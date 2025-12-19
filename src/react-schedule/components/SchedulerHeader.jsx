@@ -1,9 +1,13 @@
-import { LeftOutlined, RightOutlined, ZoomInOutlined, ZoomOutOutlined, FullscreenOutlined } from '@ant-design/icons';
-import { Button, Calendar, Col, Popover, Radio, Row, Space, Spin } from 'antd';
+import { LeftOutlined, RightOutlined, ZoomInOutlined, ZoomOutOutlined, FullscreenOutlined, SettingOutlined, CalendarOutlined, LineOutlined } from '@ant-design/icons';
+import { Button, Calendar, Checkbox, Col, Popover, Radio, Row, Space, Spin, Switch, Typography } from 'antd';
 import dayjs from 'dayjs';
 import PropTypes from 'prop-types';
 import React, { useState, createElement, useEffect } from 'react';
 import { DATE_FORMAT } from '../config/default';
+
+import { Select } from 'antd';
+
+const { Text } = Typography;
 
 const RadioButton = Radio.Button;
 const RadioGroup = Radio.Group;
@@ -11,6 +15,7 @@ const RadioGroup = Radio.Group;
 const SchedulerHeader = React.forwardRef(({
   onViewChange,
   onToggleChange,
+  onDefaultChange,
   onShiftCountChange,
   onZoomIn,
   onZoomOut,
@@ -27,6 +32,7 @@ const SchedulerHeader = React.forwardRef(({
   const [dateSpinning, setDateSpinning] = useState(false);
   const [visible, setVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  // const [isDefaultChecked, setDefaultChecked] = useState(false);
 
   const { viewType, showAgenda, isEventPerspective, config } = schedulerData;
 
@@ -38,10 +44,22 @@ const SchedulerHeader = React.forwardRef(({
   const shiftCount = schedulerData.config.shiftCount;
   const defaultValue = `${viewType}${showAgenda ? 1 : 0}${isEventPerspective ? 1 : 0}`;
   const [isToggleChecked, setIsToggleChecked] = useState(displayWeekend);
+  const defaultViewValue = Boolean(config.setDefaultViewValue);
+  const [isDefaultViewValue, setDefaultViewValue] = useState(defaultViewValue);
 
   const handleToggle = (event) => {
     setIsToggleChecked(!isToggleChecked);
     handleEvents(onToggleChange, true, event)
+  };
+
+  useEffect(() => {
+    setDefaultViewValue(Boolean(config.setDefaultViewValue));
+  }, [config.setDefaultViewValue]);
+
+  const handleDefaultChange = (e) => {
+    const checked = e.target.checked;
+    setDefaultViewValue(checked);
+    handleEvents(onDefaultChange, false, checked);
   };
 
   const handleEvents = (func, isViewSpinning, funcArg = undefined) => {
@@ -104,10 +122,11 @@ const SchedulerHeader = React.forwardRef(({
         onSelect={handleDateSelect}
       />
       <div style={{
-        display: 'flex', borderTop: '0.5px solid rgb(210, 207, 207)',
+        display: 'flex',
         paddingTop: '10px', justifyContent: `${applyButtonAlignment}`
       }}>
-        <Button type={applyButtonType} onClick={handleApply} >
+        <Button type={applyButtonType} className='apply-button-text'
+          onClick={handleApply} >
           {applyButtonText}
         </Button>
       </div>
@@ -169,7 +188,7 @@ const SchedulerHeader = React.forwardRef(({
       key={`${item.viewType}${item.showAgenda ? 1 : 0}${item.isEventPerspective ? 1 : 0}`}
       value={`${item.viewType}${item.showAgenda ? 1 : 0}${item.isEventPerspective ? 1 : 0}`}
     >
-      <span style={{ margin: '0px 8px' }}>{item.viewName}</span>
+      <span style={{ margin: '0px 0px' }}>{item.viewName}</span>
     </RadioButton>
   ));
 
@@ -186,8 +205,11 @@ const SchedulerHeader = React.forwardRef(({
       <Col>
         <div className="header2-text">
           <Space>
-            <div>
-              <LeftOutlined style={{ marginRight: '8px' }} className="icon-nav" onClick={() => handleEvents(goBack, false)} />
+            <div className='calender-nav-box'>
+              <LeftOutlined className="icon-nav leftOutlined-nav" onClick={() => handleEvents(goBack, false)} />
+              {/* <span className="icon-nav leftOutlined-nav" onClick={() => handleEvents(goBack, false)}>
+                <span className='left-nav-icon'></span>
+              </span> */}
               {config.calendarPopoverEnabled ? (
                 <Popover
                   content={popover}
@@ -197,14 +219,16 @@ const SchedulerHeader = React.forwardRef(({
                   onOpenChange={setVisible}
                   overlayClassName="scheduler-header-popover"
                 >
-                  <span className="header2-text-label" style={{ cursor: 'pointer' }}>
+                  <span className="header2-text-label calender-label" style={{ cursor: 'pointer' }}>
+                    <CalendarOutlined className='calender-icon' />
                     {dateLabel}
                   </span>
                 </Popover>
-              ) : (
-                <span className="header2-text-label">{dateLabel}</span>
-              )}
-              <RightOutlined style={{ marginLeft: '8px' }} className="icon-nav" onClick={() => handleEvents(goNext, false)} />
+              ) : (<span className="header2-text-label">{dateLabel}</span>)}
+              {/* <span className="icon-nav rightOutlined-nav" onClick={() => handleEvents(goNext, false)}>
+                <span className='right-nav-icon'></span>
+              </span> */}
+              <RightOutlined className="icon-nav rightOutlined-nav" onClick={() => handleEvents(goNext, false)} />
             </div>
             <Spin spinning={dateSpinning} />
           </Space>
@@ -216,30 +240,29 @@ const SchedulerHeader = React.forwardRef(({
               title="Settings"
               open={settingsVisible}
               onOpenChange={handleSettingsOpenChange}>
-              <Button type="primary">Settings</Button>
+              <SettingOutlined className='icon setting-icon' />
+              {/* <div className='setting-button'></div> */}
             </Popover>
           </Space>
         </div>
       </Col>
-      <Col>
+      <Col className='figma-right'>
         <Space>
+          <Checkbox className="custom-checkbox" id='setAsDefault' checked={isDefaultViewValue} onChange={handleDefaultChange} />
+          <Text>Set as default</Text>
           <Spin spinning={viewSpinning} />
           <RadioGroup
             buttonStyle="solid"
             defaultValue={defaultValue}
             size="default"
             onChange={event => handleEvents(onViewChange, true, event)} >
-            {radioButtonList}
+            <div className='view-list-wrapper'>
+              {radioButtonList}</div>
           </RadioGroup>
-        </Space>
-        <Space>
-          <div className="toggle-container">
-            <label className="toggle-text">Weekend:</label>
-            <label className="toggle-switch">
-              <input type="checkbox" disabled={disabledWeekendflag} checked={isToggleChecked} onChange={event => handleToggle(event)} />
-              <span className="slider"></span>
-            </label>
-          </div>
+          <LineOutlined className='split-line' />
+          <Text>Weekends</Text>
+          <Switch className="custom-switch" disabled={disabledWeekendflag}
+            checked={isToggleChecked} onChange={handleToggle} />
         </Space>
       </Col>
       {rightCustomHeader}
@@ -250,6 +273,7 @@ const SchedulerHeader = React.forwardRef(({
 SchedulerHeader.propTypes = {
   onViewChange: PropTypes.func.isRequired,
   onToggleChange: PropTypes.func.isRequired,
+  onDefaultChange: PropTypes.func,
   onShiftCountChange: PropTypes.func.isRequired,
   onZoomIn: PropTypes.func,
   onZoomOut: PropTypes.func,

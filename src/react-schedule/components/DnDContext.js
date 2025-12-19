@@ -29,7 +29,7 @@ export default class DnDContext {
       const { cellUnit, localeDayjs } = schedulerData;
       const type = monitor.getItemType();
       const pos = getPos(component.eventContainer);
-      const cellWidth = schedulerData.getContentCellWidth();
+      const cellWidth = schedulerData.getUpdatedContentCellWidth();
       let initialStartTime = null;
       let initialEndTime = null;
       if (type === DnDTypes.EVENT) {
@@ -63,7 +63,7 @@ export default class DnDContext {
       const item = monitor.getItem();
       const type = monitor.getItemType();
       const pos = getPos(component.eventContainer);
-      const cellWidth = schedulerData.getContentCellWidth();
+      const cellWidth = schedulerData.getUpdatedContentCellWidth();
       let initialStart = null;
       // let initialEnd = null;
       if (type === DnDTypes.EVENT) {

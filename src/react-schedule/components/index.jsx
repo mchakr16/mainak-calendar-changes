@@ -1,7 +1,7 @@
 /* eslint-disable consistent-return */
 import PropTypes from 'prop-types';
 import React, { useState, useEffect, useRef, useCallback, createElement } from 'react';
-import { CellUnit, DATETIME_FORMAT, DATE_FORMAT, SummaryPos, ViewType } from '../config/default';
+import { CellUnit, DATETIME_FORMAT, DATE_FORMAT, SummaryPos, ViewType, IconType } from '../config/default';
 import AddMorePopover from './AddMorePopover';
 import AgendaView from './AgendaView';
 import BodyView from './BodyView';
@@ -14,6 +14,8 @@ import SchedulerData from './SchedulerData';
 import SchedulerHeader from './SchedulerHeader';
 import wrapperFun from './WrapperFun';
 import HeaderView from './HeaderView';
+import { TreeSelect } from 'antd';
+import { DoubleLeftOutlined, DoubleRightOutlined } from '@ant-design/icons';
 
 function Scheduler(props) {
   const {
@@ -28,6 +30,9 @@ function Scheduler(props) {
     onSelectDate,
     leftCustomHeader,
     rightCustomHeader,
+    onResourceChange,
+    onDefaultChange,
+    customNavArrowClick
   } = props;
 
   // Initialize DnD context
@@ -63,6 +68,20 @@ function Scheduler(props) {
   const schedulerContentBgTableRef = useRef(null);
   const ulObserverRef = useRef(null);
   const headerObserverRef = useRef(null);
+
+  const resourceFilterConfig = schedulerData.config.resourceFilterConfig ?? {};
+  const resourceFilterOptions = resourceFilterConfig.options ?? [];
+  const resourceFilterVisible = resourceFilterConfig.visible ?? false;
+  const resourceFilterPlaceholder = resourceFilterConfig.placeholder ?? 'Please select';
+  let prevSelectedFilter = sessionStorage.getItem('selectedResourceType');
+  prevSelectedFilter = prevSelectedFilter !== '' ? JSON.parse(prevSelectedFilter) : null;
+  const [selectedResourceType, setSelectedResouceType] = useState(prevSelectedFilter);
+
+  const onChangeResources = (selectedResourceType) => {
+    sessionStorage.setItem("selectedResourceType", JSON.stringify(selectedResourceType));
+    setSelectedResouceType(selectedResourceType);
+    onResourceChange(schedulerData, selectedResourceType);
+  }
 
   // Window resize handler
   const onWindowResize = useCallback(() => {
@@ -308,9 +327,13 @@ function Scheduler(props) {
     onViewChange(schedulerData, { viewType, showAgenda, isEventPerspective });
   }, [onViewChange, schedulerData]);
 
-  const handleToggleChange = useCallback(e => {
-    onToggleChange(schedulerData, e.target.value);
+  const handleToggleChange = useCallback(event => {
+    onToggleChange(schedulerData, event);
   }, [onToggleChange, schedulerData]);
+
+  const handleDefaultChange = useCallback(event => {
+    onDefaultChange(schedulerData, event);
+  }, [onDefaultChange, schedulerData]);
 
   const handleShiftCountChange = useCallback(e => {
     onShiftCountChange(schedulerData, e.target.value);
@@ -353,10 +376,10 @@ function Scheduler(props) {
   if (showAgenda) {
     tbodyContent = <AgendaView {...props} />;
   } else {
-    const resourceTableWidth = schedulerData.getResourceTableWidth();
-    const schedulerContainerWidth = width - (config.resourceViewEnabled ? resourceTableWidth : 0);
+    // const resourceTableWidth = schedulerData.getResourceTableWidth();
+    // const schedulerContainerWidth = width - (config.resourceViewEnabled ? resourceTableWidth : 0);
     const calculatedSchedulerWidth = schedulerData.getContentTableWidth() - 1;
-    // const resourceTableContainerWidth = schedulerData.config.resourceTableWidth;
+    const resourceTableContainerWidth = schedulerData.config.resourceTableWidth;
 
     const schedulerWidth = calculatedSchedulerWidth;
 
@@ -367,22 +390,22 @@ function Scheduler(props) {
       tableWidth = cellWidth * numCells;
     }
 
-    const weekViewWidth = (schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Quarter) ?
-      (7 * (schedulerData.config.shiftCount || 3) * 45) : tableWidth;
+    // const weekViewWidth = (schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Year 
+    // || schedulerData.viewType === ViewType.Quarter) ? (7 * (schedulerData.config.shiftCount || 3) * 45) : tableWidth;
 
-    let monthViewWidth = schedulerWidth;
-    if (schedulerData.viewType === ViewType.Month) {
-      const weekdaysHeaders = schedulerData.config.displayWeekend ?
-        Math.floor(schedulerData.headers.length * (5 / 7)) : schedulerData.headers.length;
-      monthViewWidth = weekdaysHeaders * schedulerData.getContentCellWidth();
-    }
+    // let monthViewWidth = schedulerWidth;
+    // if (schedulerData.viewType === ViewType.Month) {
+    //   const weekdaysHeaders = schedulerData.config.displayWeekend ?
+    //     Math.floor(schedulerData.headers.length * (5 / 7)) : schedulerData.headers.length;
+    //   monthViewWidth = weekdaysHeaders * schedulerData.getContentCellWidth();
+    // }
 
     const DndResourceEvents = state.dndContext.getDropTarget(config.dragAndDropEnabled);
     const eventDndSource = state.dndContext.getDndSource();
 
     const displayRenderData = renderData.filter(o => o.render);
     const resourceEventsList = displayRenderData.map(item => (
-      <DndResourceEvents {...props} key={item.slotId} resourceEvents={item} dndSource={eventDndSource} />
+      <DndResourceEvents {...props} key={item.slotId} resourceEvents={item} dndSource={eventDndSource} contentBgTableRef={schedulerContentBgTableRef} />
     ));
 
     const contentHeight = config.schedulerContentHeight;
@@ -391,7 +414,7 @@ function Scheduler(props) {
 
     let schedulerContentStyle = {
       overflowX: viewType === ViewType.Week || viewType === ViewType.Custom ? 'hidden' : 'auto',
-      overflowY: 'auto',
+      overflowY: 'scroll',
       margin: '0px',
       position: 'relative',
       height: contentHeight,
@@ -402,9 +425,9 @@ function Scheduler(props) {
       height: contentHeight,
       overflowX: 'hidden',
       overflowY: 'auto',
-      width: resourceTableWidth,
+      width: resourceTableContainerWidth,
       margin: `0px -${contentScrollbarWidth}px 0px 0px`,
-      maxWidth: resourceTableWidth,
+      maxWidth: resourceTableContainerWidth,
       scrollbarWidth: 'none'
     };
 
@@ -435,14 +458,32 @@ function Scheduler(props) {
 
     tbodyContent = (
       <tr>
-        <td style={{ display: config.resourceViewEnabled ? undefined : 'none', width: resourceTableWidth, verticalAlign: 'top', maxWidth: 200 }}>
+        <td style={{ display: config.resourceViewEnabled ? undefined : 'none', width: resourceTableContainerWidth, verticalAlign: 'top', maxWidth: resourceTableContainerWidth }}>
           <div className="resource-view">
             <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
               <div style={{ overflowX: 'hidden', overflowY: 'auto', margin: `0px 0px -${contentScrollbarHeight}px` }}>
                 <table className="resource-table">
                   <thead>
                     <tr style={{ height: config.tableHeaderHeight }}>
-                      <th className="header3-text resource-name">{resourceName}</th>
+                      <th className="resource-name">
+                        {resourceFilterVisible ? (
+                          <TreeSelect
+                            showSearch={false}
+                            style={{ width: '100%' }}
+                            value={selectedResourceType}
+                            treeNodeFilterProp="title"
+                            placeholder={resourceFilterPlaceholder}
+                            treeDefaultExpandAll
+                            allowClear
+                            treeCheckable
+                            styles={{ popup: { root: { maxHeight: 500, width: 200, overflow: 'auto' } } }}
+                            maxTagCount={0}
+                            multiple
+                            onChange={onChangeResources}
+                            treeData={resourceFilterOptions}
+                          />
+                        ) : resourceName}
+                      </th>
                     </tr>
                   </thead>
                 </table>
@@ -463,17 +504,22 @@ function Scheduler(props) {
         </td>
         <td>
           <div className="scheduler-view" style={{
-            width: schedulerData.viewType === ViewType.Month
-              ? Math.max(schedulerContainerWidth, monthViewWidth)
-              : (schedulerData.viewType === ViewType.Custom
-                || schedulerData.viewType === ViewType.Year
-                || schedulerData.viewType === ViewType.Quarter)
-                ? Math.max(schedulerContainerWidth, weekViewWidth)
-                : Math.max(schedulerContainerWidth, schedulerWidth),
-            verticalAlign: 'top',
-            // maxWidth: Math.min(1080, window.innerWidth * 0.9)
+            // width: schedulerData.viewType === ViewType.Month
+            //   ? Math.max(schedulerContainerWidth, monthViewWidth)
+            //   : (schedulerData.viewType === ViewType.Custom
+            //     || schedulerData.viewType === ViewType.Year
+            //     || schedulerData.viewType === ViewType.Quarter)
+            //     ? Math.max(schedulerContainerWidth, weekViewWidth)
+            //     : Math.max(schedulerContainerWidth, schedulerWidth),
+            maxWidth: Math.min(1080, window.innerWidth * 0.9)
           }}>
-            <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight }}>
+
+            {viewType === 6 && (<>
+              <div className="leftArrow claNav" onClick={() => customNavArrowClick(schedulerData, 'left')}><DoubleLeftOutlined /></div>
+              <div className="rightArrow claNav" onClick={() => customNavArrowClick(schedulerData, 'right')}><DoubleRightOutlined /></div> </>)}
+
+            <div style={{ overflow: 'hidden', borderBottom: '1px solid #e9e9e9', height: config.tableHeaderHeight, paddingRight: '1vw' }}>
+
               <div style={{ overflowX: 'scroll', overflowY: 'hidden', margin: `0px 0px -${contentScrollbarHeight}px` }}
                 ref={schedulerHeadRef}
                 onMouseOver={onSchedulerHeadMouseOver}
@@ -484,7 +530,7 @@ function Scheduler(props) {
                 aria-label="Scheduler Header"
               >
                 {/* <div style={{ paddingRight: `${contentScrollbarWidth}px`, width: tableWidth + contentScrollbarWidth }}> */}
-                <div style={{ paddingRight: `${contentScrollbarWidth}px` }}>
+                <div >
                   <table className="scheduler-bg-table" style={{
                     width: tableWidth,
                     tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
@@ -495,6 +541,7 @@ function Scheduler(props) {
               </div>
             </div>
             <div
+            className='scheduler-main'
               style={schedulerContentStyle}
               ref={schedulerContentRef}
               onMouseOver={onSchedulerContentMouseOver}
@@ -503,13 +550,13 @@ function Scheduler(props) {
               onBlur={onSchedulerContentMouseOut}
               onScroll={onSchedulerContentScroll}
             >
-              <div style={{ width: schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Week ? '100%' : schedulerData.viewType === ViewType.Year ? 'max-content' : 'max-content', minWidth: '100%' }}>
+              <div style={{ width: schedulerData.viewType === ViewType.Custom || schedulerData.viewType === ViewType.Week ? '100%' : 'max-content', minWidth: '100%' }}>
                 <div className="scheduler-content">
                   <table className="scheduler-content-table">
                     <tbody>{resourceEventsList}</tbody>
                   </table>
                 </div>
-                <div className="scheduler-bg" style={{ paddingRight: `${contentScrollbarWidth}px` }}>
+                <div className="scheduler-bg" style={{ paddingRight: 0 }}>
                   <table className="scheduler-bg-table" style={{
                     width: tableWidth,
                     tableLayout: (schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Week) ? 'fixed' : 'auto'
@@ -530,10 +577,15 @@ function Scheduler(props) {
       ref={schedulerHeaderRef}
       style={{
         display: config.headerEnabled ? undefined : 'none',
-        marginBottom: config.headerEnabled ? '24px' : undefined,
+        marginBottom: config.headerEnabled ? '5px' : undefined,
+        border: '1px solid rgba(0, 0, 0, 0.10)',
+        padding: '10px 0px',
+        margin: '0px',
+        borderBottom: 'none'
       }}
       onViewChange={handleViewChange}
       onToggleChange={handleToggleChange}
+      onDefaultChange={handleDefaultChange}
       onShiftCountChange={handleShiftCountChange}
       onZoomIn={handleZoomIn}
       onZoomOut={handleZoomOut}
@@ -542,6 +594,7 @@ function Scheduler(props) {
       onSelectDate={onSelect}
       goNext={goNext}
       goBack={goBack}
+
       rightCustomHeader={rightCustomHeader}
       leftCustomHeader={leftCustomHeader}
     />
@@ -578,6 +631,7 @@ Scheduler.propTypes = {
   newEvent: PropTypes.func,
   subtitleGetter: PropTypes.func,
   eventItemClick: PropTypes.func,
+  eventItemDoubleClick: PropTypes.func,
   viewEventClick: PropTypes.func,
   viewEventText: PropTypes.string,
   viewEvent2Click: PropTypes.func,
@@ -593,6 +647,8 @@ Scheduler.propTypes = {
   onScrollRight: PropTypes.func,
   onScrollTop: PropTypes.func,
   onScrollBottom: PropTypes.func,
+  onResourceChange: PropTypes.func,
+  onDefaultChange: PropTypes.func
 };
 
 export {
@@ -607,4 +663,5 @@ export {
   SummaryPos,
   ViewType,
   wrapperFun,
+  IconType
 };

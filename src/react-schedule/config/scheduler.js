@@ -4,7 +4,7 @@ export default {
   schedulerWidth: '100%',
   besidesWidth: 20,
   underneathHeight: 20,
-  schedulerMaxHeight: 0,
+  schedulerMaxHeight: 300,
   tableHeaderHeight: 40,
   schedulerContentHeight: '500px',
 
@@ -50,7 +50,7 @@ export default {
   nonAgendaSlotMinHeight: 0,
   dayStartFrom: 0,
   dayStopTo: 23,
-  defaultEventBgColor: '#80C5F6',
+  defaultEventBgColor: '#43AB45',
   selectedAreaColor: '#7EC2F3',
   nonWorkingTimeHeadColor: '#999999',
   nonWorkingTimeHeadBgColor: '#fff0f6',

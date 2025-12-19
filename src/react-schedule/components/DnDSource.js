@@ -44,8 +44,7 @@ export default class DnDSource {
         if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
           newEnd = localeDayjs(new Date(newStart)).endOf('week').format(DATETIME_FORMAT);
         } else {
-          newEnd = localeDayjs(newStart).add(localeDayjs(event.end).diff(localeDayjs(event.start)), 'ms')
-            .format(DATETIME_FORMAT);
+          newEnd = localeDayjs(newStart).add(localeDayjs(event.end).diff(localeDayjs(event.start)), 'ms').format(DATETIME_FORMAT);
         }
 
         // if crossResourceMove disabled, slot returns old value

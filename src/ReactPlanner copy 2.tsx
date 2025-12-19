@@ -616,14 +616,14 @@ const ReactPlanner = (props: any) => {
         if (value === 'right') {
             schedulerData.config.customNavDirection = 'right';
             element?.scrollTo({
-                left: element.scrollWidth - element.clientWidth-2,
+                left: element.scrollWidth - element.clientWidth,
                 behavior: 'smooth'
             });
 
         } else {
             schedulerData.config.customNavDirection = 'left';
             element?.scrollTo({
-                left: 2, // scroll right by 100px
+                left: 0, // scroll right by 100px
                 behavior: 'smooth'
             });
 

@@ -27,8 +27,10 @@ export default class SchedulerData {
       this.cellUnit = CellUnit.Week;
     } else if (viewType === ViewType.Year) {
       this.cellUnit = CellUnit.Week;
+    } else if (viewType === ViewType.Custom1) {
+      this.cellUnit = CellUnit.Day;
     } else {
-      this.cellUnit = CellUnit.Day; // default for custom views
+      this.cellUnit = CellUnit.Day;
     }
 
     this.showAgenda = showAgenda;
@@ -161,6 +163,14 @@ export default class SchedulerData {
 
   prev() {
     this._resolveDate(-1);
+    this.events = [];
+    this._createHeaders();
+    this._createRenderData();
+  }
+
+  // calling this funtion on clicking on next button
+  update(newStart, newEnd) {
+    this._resolveDate(0);
     this.events = [];
     this._createHeaders();
     this._createRenderData();
@@ -335,6 +345,8 @@ export default class SchedulerData {
       this.cellUnit = CellUnit.Week;
     } else if (viewType === ViewType.Year) {
       this.cellUnit = CellUnit.Week;
+    } else if (viewType === ViewType.Custom1) {
+      this.cellUnit = CellUnit.Day;
     } else {
       this.cellUnit = CellUnit.Day; // default for custom views
     }
@@ -498,66 +510,46 @@ export default class SchedulerData {
   getContentCellWidth() {
     const contentCellConfigWidth = this.getContentCellConfigWidth();
     const schedulerWidth = this.getSchedulerWidth();
-    if (this.viewType === ViewType.Custom) {
-      const baseWeekCellWidth = 45;
-      const weekViewWidth = 7 * (3) * baseWeekCellWidth; // forSH
-      return this.headers.length > 0 ? Math.floor(weekViewWidth / this.headers.length) : baseWeekCellWidth;
-    }
+    const resourceTableConfigWidth = this.getResourceTableConfigWidth();
+    const resourceTableWidth = this.isResourceViewResponsive() ?
+      parseInt((schedulerWidth * Number(resourceTableConfigWidth.slice(0, -1))) / 100, 10) : resourceTableConfigWidth;
+    const schedulerContentWidth = schedulerWidth - resourceTableWidth + 17;
 
-    if (this.viewType === ViewType.Week && this.isContentViewResponsive()) {
-      const resourceTableWidth = this.config.resourceViewEnabled ? 160 : 0;
-      const contentScrollbarWidth = 17;
-      const availableWidth = schedulerWidth - resourceTableWidth - contentScrollbarWidth;
-      const totalColumns = this.headers.length;
-
-      if (totalColumns > 0) {
-        const exactCellWidth = availableWidth / totalColumns;
-        const finalCellWidth = Math.floor(exactCellWidth);
-        return finalCellWidth;
-      }
-    }
-
-    const baseCellWidth = this.isContentViewResponsive() ?
-      parseInt((schedulerWidth * Number(contentCellConfigWidth.slice(0, -1))) / 100, 10) :
-      contentCellConfigWidth;
-
-    let cellWidth = baseCellWidth;
-
-    if (this.viewType === ViewType.Week && !this.isContentViewResponsive()) {
-      cellWidth = baseCellWidth;
-    }
-
-    if (this.cellUnit === CellUnit.Day && !this.config.displayWeekend && this.viewType === ViewType.Week) {
-      const fullWeekDays = 7;
-      const shiftMultiplier = 3; // this.config.shiftCount || 1; // forSH
-      const fullWeekColumns = fullWeekDays * shiftMultiplier;
-      const visibleColumns = this.headers.length;
-
-      if (visibleColumns > 0 && fullWeekColumns > visibleColumns) {
-        cellWidth = cellWidth * (fullWeekColumns / visibleColumns);
-      }
-    }
+    let cellWidth;
+    cellWidth = this.isContentViewResponsive() ? parseInt((schedulerWidth * Number(contentCellConfigWidth.slice(0, -1))) / 100, 10) : contentCellConfigWidth;
 
     if (this.config.zoomEnabled && this.config.zoomLevel) {
-      const originalCellWidth = cellWidth;
       cellWidth = cellWidth * this.config.zoomLevel;
 
       if (this.config.zoomLevel < 1.0 && this.headers.length > 0 && this.viewType !== ViewType.Year) {
         const zoomedTableWidth = this.headers.length * cellWidth;
-
-        const resourceTableConfigWidth = this.getResourceTableConfigWidth();
-        const resourceTableWidth = this.isResourceViewResponsive() ?
-          parseInt((schedulerWidth * Number(resourceTableConfigWidth.slice(0, -1))) / 100, 10) :
-          resourceTableConfigWidth;
-
-        const schedulerContentWidth = schedulerWidth - resourceTableWidth;
 
         if (zoomedTableWidth < schedulerContentWidth) {
           cellWidth = schedulerContentWidth / this.headers.length;
         }
       }
     }
+    return cellWidth;
+  }
 
+  getUpdatedContentCellWidth() {
+    let cellWidth = this.getContentCellWidth();
+    const headerTable = document.querySelector('.scheduler-bg-table');
+    if (headerTable && this.headers && this.headers.length) {
+      const actualTableWidth = this.config.offsetWidth || headerTable.offsetWidth;
+
+      const numCells = this.headers.length;
+      const calculatedCellWidth = actualTableWidth / numCells;
+
+      if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
+        cellWidth = calculatedCellWidth;
+      } else {
+        const cells = headerTable.querySelectorAll('th');
+        if (cells.length > 0) {
+          cellWidth = cells[0].offsetWidth;
+        }
+      }
+    }
     return cellWidth;
   }
 
@@ -921,6 +913,18 @@ export default class SchedulerData {
 
       case ViewType.Month:
         setStartAndEndDates('month');
+        //      if (this.behaviors.getCustomDateFunc !== undefined) {
+        //   const customDate = this.behaviors.getCustomDateFunc(this, num, date);
+        //   this.startDate = this.localeDayjs(customDate.startDate);
+        //   this.endDate = this.localeDayjs(customDate.endDate);
+
+        //   console.log("Start date /end date in custom function",this.startDate.toDate(), this.endDate.toDate())
+        //   if (customDate.cellUnit) {
+        //     this.cellUnit = customDate.cellUnit;
+        //   }
+        // } else {
+        //   throw new Error('This is a custom view type, set behaviors.getCustomDateFunc func to resolve the time window (startDate and endDate) yourself');
+        // }
         break;
 
       case ViewType.Quarter:
@@ -931,6 +935,7 @@ export default class SchedulerData {
         setStartAndEndDates('year');
         break;
 
+      // case ViewType.Month:
       case ViewType.Custom:
       case ViewType.Custom1:
       case ViewType.Custom2:
@@ -938,6 +943,8 @@ export default class SchedulerData {
           const customDate = this.behaviors.getCustomDateFunc(this, num, date);
           this.startDate = this.localeDayjs(customDate.startDate);
           this.endDate = this.localeDayjs(customDate.endDate);
+
+          console.log("Start date /end date in custom function", this.startDate.toDate(), this.endDate.toDate())
           if (customDate.cellUnit) {
             this.cellUnit = customDate.cellUnit;
           }
@@ -1107,7 +1114,7 @@ export default class SchedulerData {
       count: 0,
       addMore: 0,
       addMoreIndex: 0,
-      events: Array(3),
+      events: [],
     };
   }
 
@@ -1446,50 +1453,117 @@ export default class SchedulerData {
 
   _createRenderData() {
     const initRenderData = this._createInitRenderData(this.isEventPerspective, this.eventGroups, this.resources, this.headers);
-    // this.events.sort(this._compare);
     const cellMaxEventsCount = this.getCellMaxEvents();
     const cellMaxEventsCountValue = 30;
 
     this.events.forEach(item => {
-      const resourceEventsList = initRenderData.filter(x => x.slotId === this._getEventSlotId(item));
-      if (resourceEventsList.length > 0) {
-        const resourceEvents = resourceEventsList[0];
-        const span = this._getSpan(item.start, item.end, this.headers);
-        const eventStart = new Date(item.start);
-        const eventEnd = new Date(item.end);
-        let pos = -1;
+      const resourceEventsList = initRenderData.find(x => x.slotId === this._getEventSlotId(item));
+      if (!resourceEventsList) return;
 
-        resourceEvents.headerItems.forEach((header, index) => {
-          const headerStart = new Date(header.start);
-          const headerEnd = new Date(header.end);
-          if (headerEnd > eventStart && headerStart < eventEnd) {
-            header.count += 1;
-            if (header.count > resourceEvents.rowMaxCount) {
-              resourceEvents.rowMaxCount = header.count;
-              const rowsCount = cellMaxEventsCount <= cellMaxEventsCountValue && resourceEvents.rowMaxCount > cellMaxEventsCount ? cellMaxEventsCount : resourceEvents.rowMaxCount;
-              const newRowHeight = rowsCount * this.config.eventItemLineHeight + (this.config.creatable && this.config.checkConflict === false ? 20 : 2);
-              if (newRowHeight > resourceEvents.rowHeight) resourceEvents.rowHeight = newRowHeight;
-            }
+      const resourceEvents = resourceEventsList;
+      const eventStart = new Date(item.start);
+      const eventEnd = new Date(item.end);
+      const span = this._getSpan(item.start, item.end, this.headers);
 
-            if (pos === -1) {
-              let tmp = 0;
-              while (header.events[tmp] !== undefined) tmp += 1;
+      let startIndex = -1;
+      let endIndex = -1;
+      for (let i = 0; i < resourceEvents.headerItems.length; i++) {
+        const hs = new Date(resourceEvents.headerItems[i].start);
+        const he = new Date(resourceEvents.headerItems[i].end);
+        if (he > eventStart && hs < eventEnd) {
+          if (startIndex === -1) startIndex = i;
+          endIndex = i;
+        }
+      }
 
-              pos = tmp;
-            }
-            let render = headerStart <= eventStart || index === 0;
-            if (render === false) {
-              const previousHeader = resourceEvents.headerItems[index - 1];
-              const previousHeaderStart = new Date(previousHeader.start);
-              const previousHeaderEnd = new Date(previousHeader.end);
-              if (previousHeaderEnd <= eventStart || previousHeaderStart >= eventEnd) render = true;
-            }
-            // console.log(`span: ${span}`)
-            header.events[pos] = this._createHeaderEvent(render, span, item);
+      if (startIndex === -1) return;
+
+      for (let i = startIndex; i <= endIndex; i++) {
+        if (!Array.isArray(resourceEvents.headerItems[i].events)) {
+          resourceEvents.headerItems[i].events = [];
+        }
+      }
+
+      let pos = 0;
+      outer: while (true) {
+        for (let i = startIndex; i <= endIndex; i++) {
+          if (resourceEvents.headerItems[i].events[pos] !== undefined) {
+            pos++;
+            continue outer;
           }
-        });
+        }
+        break;
+      }
+
+      for (let i = startIndex; i <= endIndex; i++) {
+        const header = resourceEvents.headerItems[i];
+
+        header.count = (header.count || 0) + 1;
+        if (header.count > resourceEvents.rowMaxCount) {
+          resourceEvents.rowMaxCount = header.count;
+          const rowsCount = (cellMaxEventsCount <= cellMaxEventsCountValue && resourceEvents.rowMaxCount > cellMaxEventsCount) ? cellMaxEventsCount : resourceEvents.rowMaxCount;
+          const newRowHeight = rowsCount * this.config.eventItemLineHeight + (this.config.creatable && this.config.checkConflict === false ? 20 : 2);
+          if (newRowHeight > resourceEvents.rowHeight) resourceEvents.rowHeight = newRowHeight;
+        }
+
+        const headerStart = new Date(header.start);
+        let render = headerStart <= eventStart || i === 0;
+        if (render === false) {
+          const previousHeader = resourceEvents.headerItems[i - 1];
+          const previousHeaderStart = new Date(previousHeader.start);
+          const previousHeaderEnd = new Date(previousHeader.end);
+          if (previousHeaderEnd <= eventStart || previousHeaderStart >= eventEnd) render = true;
+        }
+
+        header.events[pos] = this._createHeaderEvent(render, span, item);
       }
     });
+
+    // const initRenderData = this._createInitRenderData(this.isEventPerspective, this.eventGroups, this.resources, this.headers);
+    // // this.events.sort(this._compare);
+    // const cellMaxEventsCount = this.getCellMaxEvents();
+    // const cellMaxEventsCountValue = 30;
+
+    // this.events.forEach(item => {
+    //   const resourceEventsList = initRenderData.filter(x => x.slotId === this._getEventSlotId(item));
+    //   if (resourceEventsList.length > 0) {
+    //     const resourceEvents = resourceEventsList[0];
+    //     const span = this._getSpan(item.start, item.end, this.headers);
+    //     const eventStart = new Date(item.start);
+    //     const eventEnd = new Date(item.end);
+    //     let pos = -1;
+
+    //     resourceEvents.headerItems.forEach((header, index) => {
+    //       const headerStart = new Date(header.start);
+    //       const headerEnd = new Date(header.end);
+    //       if (headerEnd > eventStart && headerStart < eventEnd) {
+    //         header.count += 1;
+    //         if (header.count > resourceEvents.rowMaxCount) {
+    //           resourceEvents.rowMaxCount = header.count;
+    //           const rowsCount = cellMaxEventsCount <= cellMaxEventsCountValue && resourceEvents.rowMaxCount > cellMaxEventsCount ? cellMaxEventsCount : resourceEvents.rowMaxCount;
+    //           const newRowHeight = rowsCount * this.config.eventItemLineHeight + (this.config.creatable && this.config.checkConflict === false ? 20 : 2);
+    //           if (newRowHeight > resourceEvents.rowHeight) resourceEvents.rowHeight = newRowHeight;
+    //         }
+
+    //         if (pos === -1) {
+    //           let tmp = 0;
+    //           while (header.events[tmp] !== undefined) tmp += 1;
+
+    //           pos = tmp;
+    //         }
+    //         let render = headerStart <= eventStart || index === 0;
+    //         if (render === false) {
+    //           const previousHeader = resourceEvents.headerItems[index - 1];
+    //           const previousHeaderStart = new Date(previousHeader.start);
+    //           const previousHeaderEnd = new Date(previousHeader.end);
+    //           if (previousHeaderEnd <= eventStart || previousHeaderStart >= eventEnd) render = true;
+    //         }
+    //         // console.log(`span: ${span}`)
+    //         header.events[pos] = this._createHeaderEvent(render, span, item);
+    //       }
+    //     });
+    //   }
+    // });
 
     if (cellMaxEventsCount <= cellMaxEventsCountValue || this.behaviors.getSummaryFunc !== undefined) {
       initRenderData.forEach(resourceEvents => {
@@ -1539,7 +1613,6 @@ export default class SchedulerData {
         }
       });
     }
-
     this.renderData = initRenderData;
   }
 

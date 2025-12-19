@@ -1,4 +1,4 @@
-import { MinusSquareOutlined, PlusSquareOutlined } from '@ant-design/icons';
+import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import PropTypes from 'prop-types';
 import React, { createElement } from 'react';
 
@@ -25,9 +25,15 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
 
     if (item.hasChildren) {
       indent = item.expanded
-        ? <MinusSquareOutlined key={key} {...restIconProps} />
-        : <PlusSquareOutlined key={key} {...restIconProps} />;
+        ? <MinusOutlined className='icon' key={key} {...restIconProps} />
+        : <PlusOutlined className='icon' key={key} {...restIconProps} />;
     }
+
+    // if (item.hasChildren) {
+    //   indent = item.expanded
+    //     ? <span className='resource-minus-icon' key={key} {...restIconProps} ></span>
+    //     : <span className='resource-plus-icon' key={key} {...restIconProps} ></span>
+    // }
 
     indents.push(indent);
 
@@ -43,7 +49,7 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
         {indents}
         <button type="button" className="slot-text txt-btn-dis resource-slot" style={{ cursor: slotClickedFunc === undefined ? undefined : 'pointer', width: width - 10 }}>
           {item.slotName}
-        </button> 
+        </button>
       </span>
     );
 

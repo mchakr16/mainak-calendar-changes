@@ -5,9 +5,9 @@
 import { Popover } from 'antd';
 import { PropTypes } from 'prop-types';
 import React, { Component, createElement } from 'react';
-import { CellUnit, DATETIME_FORMAT, DATE_FORMAT, DnDTypes, ViewType, IconType } from '../config/default';
+import { CellUnit, DATETIME_FORMAT, DnDTypes, ViewType, IconType } from '../config/default';
 import EventItemPopover from './EventItemPopover';
-import { InfoCircleFilled, WarningFilled, RetweetOutlined } from '@ant-design/icons';
+import { InfoCircleFilled, InteractionFilled, WarningFilled, InteractionOutlined, WarningOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
@@ -44,6 +44,32 @@ const stopDragHelper = ({ count, cellUnit, config, dragType, eventItem, localeDa
     resolve(result);
   });
 };
+
+const computeNewDragDate = (dateStr, count, displayWeekend, dateFormat) => {
+  const baseDate = dayjs(new Date(dateStr));
+
+  if (displayWeekend) {
+    return baseDate.add(count, 'days').hour(23).minute(59).second(59).format(dateFormat);
+  } else {
+    let newDate = baseDate;
+    let added = 0;
+    while (added < count) {
+      newDate = newDate.add(1, 'day');
+      const weekday = newDate.day();
+      if (weekday !== 0 && weekday !== 6) {
+        added++;
+      }
+    }
+    while (added > count) {
+      newDate = newDate.subtract(1, 'day');
+      const weekday = newDate.day();
+      if (weekday !== 0 && weekday !== 6) {
+        added--;
+      }
+    }
+    return newDate.hour(23).minute(59).second(59).format(dateFormat);
+  }
+}
 
 const startResizable = ({ eventItem, isInPopover, schedulerData }) => schedulerData.config.startResizable === true
   && isInPopover === false
@@ -143,7 +169,7 @@ class EventItem extends Component {
       clientX = ev.clientX;
     }
     const { left, width, leftIndex, rightIndex, schedulerData } = this.props;
-    const cellWidth = schedulerData.getContentCellWidth();
+    const cellWidth = schedulerData.getUpdatedContentCellWidth();
     const offset = leftIndex > 0 ? 5 : 6;
     const minWidth = cellWidth - offset;
     const maxWidth = rightIndex * cellWidth - offset;
@@ -183,7 +209,7 @@ class EventItem extends Component {
       clientX = ev.clientX;
     }
     const { cellUnit, events, config, localeDayjs, viewType, headers } = schedulerData;
-    const cellWidth = schedulerData.getContentCellWidth();
+    const cellWidth = schedulerData.getUpdatedContentCellWidth();
     const offset = leftIndex > 0 ? 5 : 6;
     const minWidth = cellWidth - offset;
     const maxWidth = rightIndex * cellWidth - offset;
@@ -207,7 +233,6 @@ class EventItem extends Component {
       newStart = localeDayjs(new Date(eventItem.start)).add(count * config.minuteStep, 'minutes').format(DATETIME_FORMAT);
     } else if (viewType === ViewType.Week) {
       const eventStart = new Date(eventItem.start);
-
       const headerForStart = headers.find(h =>
         localeDayjs(eventStart).isSameOrAfter(localeDayjs(h.start)) &&
         localeDayjs(eventStart).isBefore(localeDayjs(h.end)));
@@ -215,9 +240,10 @@ class EventItem extends Component {
       const headerStartTime = headerForStart ? headerForStart.start : headers[0].start;
       newStart = localeDayjs(new Date(headerStartTime)).add(count * 8, 'hours').format(DATETIME_FORMAT);
     } else if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
-      newStart = localeDayjs(new Date(eventItem.start)).startOf('week').format(DATE_FORMAT);
+      newStart = localeDayjs(new Date(eventItem.start)).add(count, 'week').startOf('week').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
     } else {
-      newStart = localeDayjs(new Date(eventItem.start)).add(count, 'days').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
+      // newStart = localeDayjs(new Date(eventItem.start)).add(count, 'days').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
+      newStart = computeNewDragDate(eventItem.start, count, config.displayWeekend, DATETIME_FORMAT);
     }
 
     newStart = await stopDragHelper({
@@ -290,7 +316,7 @@ class EventItem extends Component {
     }
     const { width, leftIndex, schedulerData } = this.props;
     const { headers } = schedulerData;
-    const cellWidth = schedulerData.getContentCellWidth();
+    const cellWidth = schedulerData.getUpdatedContentCellWidth();
     const offset = leftIndex > 0 ? 5 : 6;
     const minWidth = cellWidth - offset;
     const maxWidth = (headers.length - leftIndex) * cellWidth - offset;
@@ -329,26 +355,8 @@ class EventItem extends Component {
       clientX = ev.clientX;
     }
     const { headers, cellUnit, events, config, localeDayjs, viewType } = schedulerData;
+    const cellWidth = schedulerData.getUpdatedContentCellWidth();
 
-    // const cellWidth = schedulerData.getContentCellWidth();
-
-    let cellWidth = schedulerData.getContentCellWidth();
-
-    const headerTable = document.querySelector('.scheduler-bg-table');
-    if (headerTable && headers && headers.length > 0) {
-      const actualTableWidth = headerTable.offsetWidth;
-      const numCells = headers.length;
-      const calculatedCellWidth = actualTableWidth / numCells;
-
-      if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
-        cellWidth = calculatedCellWidth;
-      } else {
-        const cells = headerTable.querySelectorAll('th');
-        if (cells.length > 0) {
-          cellWidth = cells[0].offsetWidth;
-        }
-      }
-    }
     const offset = leftIndex > 0 ? 5 : 6;
     const minWidth = cellWidth - offset;
     const maxWidth = (headers.length - leftIndex) * cellWidth - offset;
@@ -374,16 +382,15 @@ class EventItem extends Component {
     } else if (viewType === ViewType.Week) {
       const eventEnd = new Date(eventItem.end);
       const headerEnd = headers.find((h) =>
-        localeDayjs(eventEnd).isAfter(localeDayjs(h.start)) &&
-        localeDayjs(eventEnd).isSameOrBefore(localeDayjs(h.end)));
+        localeDayjs(eventEnd).isAfter(localeDayjs(h.start)) && localeDayjs(eventEnd).isSameOrBefore(localeDayjs(h.end)));
 
       const headerEndTime = headerEnd ? headerEnd.end : null;
       newEnd = localeDayjs(new Date(headerEndTime)).add(count * 8, 'hours').format(DATETIME_FORMAT);
     } else if (viewType === ViewType.Quarter || viewType === ViewType.Year) {
-      newEnd = localeDayjs(new Date(eventItem.end)).endOf('week').format(DATE_FORMAT);
+      newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'week').endOf('week').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
     } else {
-      // newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').format(DATE_FORMAT);
-      newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
+      // newEnd = localeDayjs(new Date(eventItem.end)).add(count, 'days').hour(23).minute(59).second(59).format(DATETIME_FORMAT);
+      newEnd = computeNewDragDate(eventItem.end, count, config.displayWeekend, DATETIME_FORMAT);
     }
     newEnd = await stopDragHelper({
       dragType: 'end',
@@ -513,9 +520,9 @@ class EventItem extends Component {
         <div className='event-icon-list'>
           <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Info) }}><InfoCircleFilled /></span>
           {eventItem.hasConstraint && (
-            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Constraint) }}><WarningFilled /></span>)}
+            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Constraint) }}><WarningFilled style={{ color: '#ff4d00' }} /></span>)}
           {eventItem.isRecurrent && (
-            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Recurrent) }}><RetweetOutlined /></span>)}
+            <span onClick={(e) => { e.stopPropagation(); this.eventItemIconClickInt(schedulerData, eventItem, IconType.Recurrent) }}><InteractionFilled /></span>)}
         </div>
         <div className='event-title'><span style={{ marginLeft: '5px', lineHeight: `${config.eventItemHeight}px` }} >{eventTitle}</span></div>
       </div>

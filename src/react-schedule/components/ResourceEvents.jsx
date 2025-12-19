@@ -26,6 +26,7 @@ class ResourceEvents extends Component {
     viewEvent2Text: PropTypes.string,
     newEvent: PropTypes.func,
     eventItemTemplateResolver: PropTypes.func,
+    contentBgTableRef: PropTypes.object,
   };
 
   constructor(props) {
@@ -34,7 +35,7 @@ class ResourceEvents extends Component {
     this.state = {
       isSelecting: false,
       left: 0,
-      width: 0,
+      width: 0
     };
     this.supportTouch = false; // 'ontouchstart' in window;
   }
@@ -52,12 +53,19 @@ class ResourceEvents extends Component {
   componentDidUpdate(prevProps) {
     if (prevProps !== this.props) {
       const { schedulerData } = this.props;
+
       this.supportTouchHelper('remove');
       if (schedulerData.config.creatable) {
         this.supportTouchHelper();
       }
     }
   }
+
+  // updateEventTableWidth = (schedulerData) => {
+  //   const schedulerContentWidth = schedulerData.headers.length * schedulerData.getUpdatedContentCellWidth();
+  //   const eventTableWidth = schedulerContentWidth ? schedulerContentWidth : schedulerData.getContentTableWidth();
+  //   this.setState({ eventTableWidth });
+  // };
 
   supportTouchHelper = (evType = 'add') => {
     const ev = evType === 'add' ? this.eventContainer.addEventListener : this.eventContainer.removeEventListener;
@@ -84,28 +92,7 @@ class ResourceEvents extends Component {
     }
 
     const { schedulerData } = this.props;
-    let cellWidth = schedulerData.getContentCellWidth();
-
-    // if (schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Quarter ||
-    //   schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Week ||
-    //   (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
-
-      const headerTable = document.querySelector('.scheduler-bg-table');
-      if (headerTable && schedulerData.headers && schedulerData.headers.length > 0) {
-        const actualTableWidth = headerTable.offsetWidth;
-        const numCells = schedulerData.headers.length;
-        const calculatedCellWidth = actualTableWidth / numCells;
-
-        if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
-          cellWidth = calculatedCellWidth;
-        } else {
-          const cells = headerTable.querySelectorAll('th');
-          if (cells.length > 0) {
-            cellWidth = cells[0].offsetWidth;
-          }
-        }
-      }
-    // }
+    const cellWidth = schedulerData.getUpdatedContentCellWidth();
 
     const pos = getPos(this.eventContainer);
     const startX = clientX - pos.x;
@@ -139,28 +126,7 @@ class ResourceEvents extends Component {
     const { startX } = this.state;
     const { schedulerData } = this.props;
     const { headers } = schedulerData;
-    let cellWidth = schedulerData.getContentCellWidth();
-
-    // if (schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Quarter ||
-    //   schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Week ||
-    //   (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
-
-      const headerTable = document.querySelector('.scheduler-bg-table');
-      if (headerTable && headers && headers.length > 0) {
-        const actualTableWidth = headerTable.offsetWidth;
-        const numCells = headers.length;
-        const calculatedCellWidth = actualTableWidth / numCells;
-
-        if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
-          cellWidth = calculatedCellWidth;
-        } else {
-          const cells = headerTable.querySelectorAll('th');
-          if (cells.length > 0) {
-            cellWidth = cells[0].offsetWidth;
-          }
-        }
-      }
-    // }
+    const cellWidth = schedulerData.getUpdatedContentCellWidth();
 
     const pos = getPos(this.eventContainer);
     const currentX = clientX - pos.x;
@@ -321,35 +287,19 @@ class ResourceEvents extends Component {
   };
 
   render() {
-    const { resourceEvents, schedulerData, connectDropTarget, dndSource } = this.props;
+    const { resourceEvents, schedulerData, connectDropTarget, dndSource,contentBgTableRef } = this.props;
     const { cellUnit, startDate, endDate, config, localeDayjs, headers } = schedulerData;
     const { isSelecting, left, width } = this.state;
-    // const cellWidth = schedulerData.getContentCellWidth();
+    const cellWidth = schedulerData.getUpdatedContentCellWidth();
     const cellMaxEvents = schedulerData.getCellMaxEvents();
-    const rowWidth = schedulerData.getContentTableWidth();
     const DnDEventItem = dndSource.getDragSource();
-    let cellWidth = schedulerData.getContentCellWidth();
 
-    // if (schedulerData.viewType === ViewType.Month || schedulerData.viewType === ViewType.Quarter ||
-    //   schedulerData.viewType === ViewType.Year || schedulerData.viewType === ViewType.Week ||
-    //   (schedulerData.viewType === ViewType.Custom && schedulerData.cellUnit === CellUnit.Hour)) {
+    // const schedulerContentWidth = schedulerData.headers.length * schedulerData.getUpdatedContentCellWidth();
+    // const eventTableWidth = schedulerContentWidth ? schedulerContentWidth : schedulerData.getContentTableWidth();
+    const rowWidth =   schedulerData.getContentTableWidth();
 
-      const headerTable = document.querySelector('.scheduler-bg-table');
-      if (headerTable && headers && headers.length > 0) {
-        const actualTableWidth = headerTable.offsetWidth;
-        const numCells = headers.length;
-        const calculatedCellWidth = actualTableWidth / numCells;
-
-        if (calculatedCellWidth > 10 && calculatedCellWidth < 1000) {
-          cellWidth = calculatedCellWidth;
-        } else {
-          const cells = headerTable.querySelectorAll('th');
-          if (cells.length > 0) {
-            cellWidth = cells[0].offsetWidth;
-          }
-        }
-      }
-    // }
+  //  console.log('old',schedulerData.getContentTableWidth())
+  //  console.log(parseInt(contentBgTableRef.current?.style.width))
 
     const selectedArea = isSelecting ? <SelectedArea {...this.props} left={left} width={width} /> : <div />;
 
