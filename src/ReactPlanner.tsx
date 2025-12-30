@@ -620,28 +620,34 @@ const ReactPlanner = (props: any) => {
     }, [schedulerData]);
 
     const customNavArrowClick = (schedulerData, value) => {
-
-        
+        const startDate = new Date(schedulerData.startDate).toDateString();
+        const endDate = new Date(schedulerData.endDate).toDateString();
+        const moveTimes = !schedulerData.config.displayWeekend &&
+                ((value === 'right' && endDate.startsWith('Fri')) ||
+                (value === 'left' && startDate.startsWith('Mon')))
+                ? 3 : 1;
         const element = document.querySelector('.scheduler-main');
-        if (value === 'right') {
-            schedulerData.config.customNavDirection = 'right';
-            element?.scrollTo({
-                left: element.scrollWidth - element.clientWidth-2,
-                behavior: 'smooth'
-            });
+        for (let i = 0; i <= moveTimes - 1; i++) {
+            if (value === 'right') {
+                schedulerData.config.customNavDirection = 'right';
+                element?.scrollTo({
+                    left: element.scrollWidth - element.clientWidth-2,
+                    behavior: 'smooth'
+                });
 
-        } else {
-            schedulerData.config.customNavDirection = 'left';
-            element?.scrollTo({
-                left: 2, // scroll right by 100px
-                behavior: 'smooth'
-            });
+            } else {
+                schedulerData.config.customNavDirection = 'left';
+                element?.scrollTo({
+                    left: 2, // scroll right by 100px
+                    behavior: 'smooth'
+                });
 
+            }
+            //schedulerData.config.displayWeekend = true;
+            schedulerData.update();
+            schedulerData.setEvents(events);
+            dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
         }
-        //schedulerData.config.displayWeekend = true;
-        schedulerData.update();
-        schedulerData.setEvents(events);
-        dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     }
 
     // Render the planner and scheduler
