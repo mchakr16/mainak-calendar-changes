@@ -1,6 +1,6 @@
 /* eslint-disable no-nested-ternary */
 /* eslint-disable react/no-array-index-key */
-import React, { createElement } from 'react';
+import React, { createElement,useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { CellUnit, ViewType } from '../config/default';
 
@@ -54,11 +54,15 @@ const getShiftTimeLabel = (obj) => {
 
 const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
   const { headers, cellUnit, config, localeDayjs, viewType } = schedulerData;
-  const cellWidth = schedulerData.getContentCellWidth();
+  let cellWidth = schedulerData.getUpdatedContentCellWidth();
   const minuteStepsInHour = schedulerData.getMinuteStepsInHour();
   const fontSize = 12;
   const weekDayCount = config.displayWeekend ? 7 : 5;
   const shiftSlots = config.shiftSlots;
+
+  useEffect(() => {
+    cellWidth = schedulerData.getUpdatedContentCellWidth();
+  }, [schedulerData])
 
   const shiftColors = {
     0: config.shiftOneBgColor,
@@ -272,7 +276,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
 
   const formattedWeekDates = weekDates.map(date => localeDayjs(date).format('MMM D, ddd'));
 
-  const getWeekLabel = (weekKey, dates, viewType,colspan) => {
+  const getWeekLabel = (weekKey, dates, viewType, colspan) => {
     if (!Array.isArray(dates) || dates.length === 0) return '';
 
     const weekNumber = weekKey?.split('-')[1]?.replace('W', '') || '';
@@ -294,7 +298,7 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
         // Show full range: Week 47 (03 Nov - 07 Nov)
         const startDate = localeDayjs(dates[0].time).format('DD MMM');
         const endDate = localeDayjs(dates[dates.length - 1].time).format('DD MMM');
-        if(colspan<4){
+        if (colspan < 4) {
           return '';
         }
         return `Week ${weekNumber} (${startDate} - ${endDate})`;
@@ -323,9 +327,9 @@ const HeaderView = ({ schedulerData, nonAgendaCellHeaderTemplateResolver }) => {
 
         const weekNumberRow = Object.entries(weekGroups).map(
           ([weekKey, group]) => {
-            
+
             const colspan = viewType == ViewType.Week ? headers.length : group.length;
-            const weekNumber = getWeekLabel(weekKey, group, viewType,colspan);
+            const weekNumber = getWeekLabel(weekKey, group, viewType, colspan);
             return (
               <td key={`week-${weekKey}`} colSpan={colspan} style={{ width: cellWidth * colspan }} className={`week-header-section ${getViewCssClass(viewType)}`}>{weekNumber}</td>
             );

@@ -61,12 +61,6 @@ class ResourceEvents extends Component {
     }
   }
 
-  // updateEventTableWidth = (schedulerData) => {
-  //   const schedulerContentWidth = schedulerData.headers.length * schedulerData.getUpdatedContentCellWidth();
-  //   const eventTableWidth = schedulerContentWidth ? schedulerContentWidth : schedulerData.getContentTableWidth();
-  //   this.setState({ eventTableWidth });
-  // };
-
   supportTouchHelper = (evType = 'add') => {
     const ev = evType === 'add' ? this.eventContainer.addEventListener : this.eventContainer.removeEventListener;
     if (this.supportTouch) {
@@ -181,8 +175,8 @@ class ResourceEvents extends Component {
       const weekStartForLast = lastHeader ? new Date(lastHeader.start) : new Date(startTime);
       endTime = localeDayjs(weekStartForLast).endOf('week').format(DATETIME_FORMAT);
     }
-    // if (cellUnit !== CellUnit.Hour && viewType !== ViewType.Week && viewType !== ViewType.Quarter) {
-    if (viewType === ViewType.Month) {
+
+    if (viewType === ViewType.Month || viewType === ViewType.Custom1) {
       endTime = localeDayjs(new Date(resourceEvents.headerItems[rightIndex - 1].start))
         .hour(23).minute(59).second(59).format(DATETIME_FORMAT);
     }
@@ -287,19 +281,14 @@ class ResourceEvents extends Component {
   };
 
   render() {
-    const { resourceEvents, schedulerData, connectDropTarget, dndSource,contentBgTableRef } = this.props;
+    const { resourceEvents, schedulerData, connectDropTarget, dndSource } = this.props;
     const { cellUnit, startDate, endDate, config, localeDayjs, headers } = schedulerData;
     const { isSelecting, left, width } = this.state;
     const cellWidth = schedulerData.getUpdatedContentCellWidth();
     const cellMaxEvents = schedulerData.getCellMaxEvents();
     const DnDEventItem = dndSource.getDragSource();
 
-    // const schedulerContentWidth = schedulerData.headers.length * schedulerData.getUpdatedContentCellWidth();
-    // const eventTableWidth = schedulerContentWidth ? schedulerContentWidth : schedulerData.getContentTableWidth();
-    const rowWidth =   schedulerData.getContentTableWidth();
-
-  //  console.log('old',schedulerData.getContentTableWidth())
-  //  console.log(parseInt(contentBgTableRef.current?.style.width))
+    const rowWidth = headers.length * cellWidth; // schedulerData.getContentTableWidth();
 
     const selectedArea = isSelecting ? <SelectedArea {...this.props} left={left} width={width} /> : <div />;
 

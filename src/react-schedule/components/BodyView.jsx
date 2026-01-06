@@ -5,8 +5,7 @@ import { ViewType } from '../config/default';
 
 function BodyView({ schedulerData }) {
   const { renderData, headers, config, behaviors, viewType } = schedulerData;
-  const width = schedulerData.getContentCellWidth();
-  // const width = `${90 / headers.length}%`;
+  const width = schedulerData.getUpdatedContentCellWidth();
   const shiftSlots = config.shiftSlots;
 
   const shiftColors = {

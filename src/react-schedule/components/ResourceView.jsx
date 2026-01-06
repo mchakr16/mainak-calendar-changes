@@ -1,11 +1,12 @@
-import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
-import PropTypes from 'prop-types';
 import React, { createElement } from 'react';
+import { MinusOutlined, PlusOutlined, PlusCircleFilled, MinusCircleFilled } from '@ant-design/icons';
+import PropTypes from 'prop-types';
+import { ScheduleType, IconType } from '../config/default';
 
-function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, slotItemTemplateResolver, toggleExpandFunc }) {
-  const { renderData } = schedulerData;
-  // const width = schedulerData.getResourceTableWidth() - 2;
+function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, slotItemTemplateResolver, toggleExpandFunc, slotItemIconClick }) {
+  const { renderData, config } = schedulerData;
   const width = schedulerData.config.resourceTableWidth;
+  const isPhaseIII = config.isPhaseIII;
 
   const paddingBottom = contentScrollbarHeight;
   const displayRenderData = renderData.filter(o => o.render);
@@ -14,6 +15,10 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
     if (toggleExpandFunc) {
       toggleExpandFunc(schedulerData, item.slotId);
     }
+  };
+
+  const handleSlotItemIconClick = (schedulerData, item, iconType) => {
+    if (slotItemIconClick) slotItemIconClick(schedulerData, item, iconType);
   };
 
   const renderSlotItem = (item, indents) => {
@@ -29,25 +34,18 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
         : <PlusOutlined className='icon' key={key} {...restIconProps} />;
     }
 
-    // if (item.hasChildren) {
-    //   indent = item.expanded
-    //     ? <span className='resource-minus-icon' key={key} {...restIconProps} ></span>
-    //     : <span className='resource-plus-icon' key={key} {...restIconProps} ></span>
-    // }
-
     indents.push(indent);
-
     const slotCell = slotClickedFunc ? (
       <span className="slot-cell">
         {indents}
-        <button type="button" style={{ cursor: 'pointer', width: width - 10 }} className="slot-text txt-btn-dis resource-slot" onClick={() => slotClickedFunc(schedulerData, item)}>
+        <button type="button" style={{ cursor: 'pointer', width: item.parentId ? width - 60 : width - 40 }} className="slot-text txt-btn-dis resource-slot" onClick={() => slotClickedFunc(schedulerData, item)}>
           {item.slotName}
         </button>
       </span>
     ) : (
       <span className="slot-cell">
         {indents}
-        <button type="button" className="slot-text txt-btn-dis resource-slot" style={{ cursor: slotClickedFunc === undefined ? undefined : 'pointer', width: width - 10 }}>
+        <button type="button" className="slot-text txt-btn-dis resource-slot" style={{ cursor: slotClickedFunc === undefined ? undefined : 'pointer', width: item.parentId ? width - 60 : width - 40 }}>
           {item.slotName}
         </button>
       </span>
@@ -73,8 +71,18 @@ function ResourceView({ schedulerData, contentScrollbarHeight, slotClickedFunc, 
 
     return (
       <tr key={item.slotId}>
-        <td data-resource-id={item.slotId} style={tdStyle}>
+        <td data-resource-id={item.slotId} style={tdStyle} className="slot-item">
           {slotItem}
+          {config.scheduleType === ScheduleType.Team && isPhaseIII && (
+            <span className="icons">
+              {!item.parentId ? <PlusCircleFilled onClick={(e) => { e.stopPropagation(); handleSlotItemIconClick(schedulerData, item, IconType.Add) }} />
+                : (<>
+                  <MinusCircleFilled onClick={(e) => { e.stopPropagation(); handleSlotItemIconClick(schedulerData, item, IconType.Remove) }} />
+                  {/* <DeleteOutlined onClick={(e) => { e.stopPropagation(); handleSlotItemIconClick(schedulerData, item, IconType.Delete) }} /> */}
+                </>
+                )}
+            </span>
+          )}
         </td>
       </tr>
     );
@@ -104,6 +112,7 @@ ResourceView.propTypes = {
   slotClickedFunc: PropTypes.func,
   slotItemTemplateResolver: PropTypes.func,
   toggleExpandFunc: PropTypes.func,
+  slotItemIconClick: PropTypes.func,
 };
 
 export default ResourceView;

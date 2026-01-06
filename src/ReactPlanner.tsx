@@ -37,7 +37,7 @@ const eventList: any = []
 //     item: ObjectItem;
 // }
 
-const defaultEventColor = "#ccc";
+const defaultEventColor = "#808080";
 
 const viewTypes = ["Day", "Week", "Month", "Quarter", "Year"];
 
@@ -63,6 +63,7 @@ const ReactPlanner = (props: any) => {
 
     // State and refs for events, resources, update flag, planner width, and resize timeout
     const [events, setEvents] = useState<EventItem[]>(eventList);
+
     const plannerRef = useRef<HTMLDivElement>(null);
     const [resourceInit, setResourcesInit] = useState<any[]>([]);
     const [state, dispatch] = useReducer(reducer, initialState);
@@ -100,10 +101,9 @@ const ReactPlanner = (props: any) => {
 
     const initialDate = dayjs().format(DATE_FORMAT);
     const schedulerDataRef = useRef(null);
-    const scheduleType = 'Schedule';
+    const scheduleType = props.scheduleType;
 
     //for default view
-
     const defaultsRef = useRef<any>(null);
 
     // const propsDefaultView = props.propsDefault;
@@ -139,11 +139,11 @@ const ReactPlanner = (props: any) => {
 
     const getValueFromMicroFlow = (schedulerData) => {
         try {
-            const returnedValue: any = '[{"DefaultSchedulerView":"Day2093.7746689254721","SchedulerType":"Schedule347.62244823325616"},{"DefaultSchedulerView":"Day1427.0466862602205","SchedulerType":"Schedule434.25185377619646"},{"DefaultSchedulerView":"Day3653.519917833774","SchedulerType":"Schedule811.1694724477561"},{"DefaultSchedulerView":"Month","SchedulerType":"Schedule"}]';
+            const returnedValue: any = '[{"DefaultSchedulerView":"Month","SchedulerType":"Schedule"},{"DefaultSchedulerView":"Month","SchedulerType":"Team"}]';
             const formattedReturnValue = returnedValue.replace(/,(\s*])/g, '$1');
             const match = JSON.parse(formattedReturnValue).find(v => typeof v.SchedulerType === "string" && v.SchedulerType === scheduleType);
-            const view = match ? match.DefaultSchedulerView : 'Month';
-            console.log(view);
+            // const view = match ? match.DefaultSchedulerView : 'Month';
+            // console.log(view);
             updateViewStartEnd(schedulerData);
             return match;
         } catch (error) {
@@ -169,19 +169,21 @@ const ReactPlanner = (props: any) => {
                     quarterResourceTableWidth: 160,
                     monthResourceTableWidth: 160,
                     tableHeaderHeight: 120,
-                    eventItemHeight: 36,
-                    eventItemLineHeight: 38,
-                    nonAgendaSlotMinHeight: 50,
+                    eventItemHeight: 50,
+                    eventItemLineHeight: 52,
+                    nonAgendaSlotMinHeight: 60,
                     displayWeekend: showWeekend || false,
                     weekCellWidth: showWeekend ? '4.3%' : '6%',
-                    monthCellWidth: '3.5%',
-                    quarterCellWidth: '5%',
+                    monthCellWidth: '4.5%',
+                    quarterCellWidth: '6.7%',
                     yearCellWidth: '5%',
                     customCellWidth: '3.75%',
                     defaultExpanded: true,
                     customNavDirection: '',
                     customCountDays: 1,
                     offsetWidth: 0,
+                    spinValue: false,
+                    enableRefresh: true,
                     disabledWeekendOnViewsList: [ViewType.Custom],
                     calenderConfig: {
                         applyButtonText: 'Apply',
@@ -194,6 +196,11 @@ const ReactPlanner = (props: any) => {
                         visible: pdfPrintFlag ? false : true
                     },
                     shiftSlots: formatShiftSlots(mxShift),
+                    // [
+                    //     { start: '06:00', end: '14:00', name: 'Shift 1' },
+                    //     { start: '14:00', end: '22:00', name: 'Shift 2' },
+                    //     { start: '22:00', end: '06:00', name: 'Shift 3' },
+                    // ],
                     shiftCount: SHIFT_COUNT,
                     views: [
                         { viewName: 'Day', viewType: ViewType.Custom, showAgenda: false, isEventPerspective: false },
@@ -203,7 +210,8 @@ const ReactPlanner = (props: any) => {
                         { viewName: 'Year', viewType: ViewType.Year, showAgenda: false, isEventPerspective: false },
                         { viewName: 'Custom', viewType: ViewType.Custom1, showAgenda: false, isEventPerspective: false },
                     ],
-                    scheduleType: SHIFT_COUNT
+                    scheduleType: props.scheduleType,
+                    isPhaseIII: true
                 },
                 {
                     isNonWorkingTimeFunc: (_schedulerData, time) => {
@@ -211,85 +219,61 @@ const ReactPlanner = (props: any) => {
                         return day === 0 || day === 6;
                     },
                     getCustomDateFunc: (_schedData, num, baseDate) => {
-
-                       
-                        console.log("baseDate came from Scheduler Data===>", baseDate, typeof baseDate);
-                         console.log("_schedData.startDate==>", _schedData.startDate);
-                        
                         const currentViewType = _schedData.viewType;
                         const base = baseDate ? dayjs(baseDate) : (dayjs(_schedData.startDate) || dayjs());
 
-                        console.log("base computed in React Planner ===>", base.toDate());
                         if (currentViewType === ViewType.Custom) {
                             const startDate = dayjs(base).add(num, 'day').hour(Number(dayStartFrom)).minute(0).second(0);
                             const endDate = startDate.add(23, 'hour');
                             return { startDate, endDate, cellUnit: CellUnit.Hour };
                         }
                         if (currentViewType === ViewType.Custom1) {
- 
+                            schedulerData.config.customCellWidth = '4.5%';
                             const showWeekend = schedulerData?.config?.displayWeekend ?? false;
                             const customCountDays = schedulerData?.config?.customCountDays ?? 1;
                             const navDirection = schedulerData?.config.customNavDirection;
-                           
+
                             let dayShift = navDirection === '' ? 0 : navDirection === 'right' ? customCountDays : - customCountDays;// num < 0 ? -1 : 1;
 
                             // condition added if date is selected from calender then we are not adding day 
-                             if(typeof baseDate == 'string'){
-                                 dayShift = 0;
-                            } 
+                            if (typeof baseDate == 'string') {
+                                dayShift = 0;
+                            }
                             const anchorDay = base.date();
-                            console.log('Base Date Anchor Day===>', anchorDay);
                             const anchorMonth = dayjs(base).startOf('month').add(num, 'month');
                             const clampToMonth = (month, day) => {
                                 const dim = month.daysInMonth();
                                 const safeDay = Math.min(Math.max(1, day), dim);
                                 return month.date(safeDay);
                             };
-                   
-                            // Helper to move one working day forward/backward (skips Sat/Sun)
-                            const shiftToNextWorkingDay = (d, direction, calledBy) => {
-                                // direction: +1 or -1
-                                let candidate = d.add(direction, 'day');
-                              //  console.log("cashiftToNextWorkingDay calling  ", d.toDate(), direction);
-                                let attempts = 0;
-                                while ((candidate.day() === 0 || candidate.day() === 6) && attempts < 7) {
-                                    candidate = candidate.add(direction, 'day');
-                                  //  console.log("candidate.day()", candidate.day())
-                                    attempts++;
-                                }
-                                return candidate;
-                            };
                             // compute start anchor (clamped) and then shift by 1 day or to next working day
                             const startAnchor = clampToMonth(anchorMonth, anchorDay).startOf('day');
                             const nextMonth = anchorMonth.add(1, 'month');
                             const endAnchor = clampToMonth(nextMonth, anchorDay).endOf('day');
                             let startDate, endDate;
-                            if(showWeekend){
-                                   startDate =  startAnchor.add(dayShift, 'day')
-                                   endDate  =   endAnchor.add(dayShift, 'day').endOf('day')
-                            }else{
-
-                                 startDate =  startAnchor.add(dayShift, 'day')
-                                   endDate  =   endAnchor.add(dayShift, 'day').endOf('day')
-                                // startDate = shiftToNextWorkingDay(startAnchor, dayShift,'startDate').startOf('day');
-                                // endDate =  shiftToNextWorkingDay(endAnchor, dayShift,'endDate').endOf('day');
+                            if (showWeekend) {
+                                startDate = startAnchor.add(dayShift, 'day')
+                                endDate = endAnchor.add(dayShift, 'day').endOf('day')
+                            } else {
+                                startDate = startAnchor.add(dayShift, 'day')
+                                endDate = endAnchor.add(dayShift, 'day').endOf('day')
                             }
                             return { startDate, endDate, cellUnit: CellUnit.Day };
-
                         }
                     },
                 }
             );
 
             schedulerData.localeDayjs.locale('en-gb');
+            // schedulerData.config.monthCellWidth = `${100 / schedulerData.headers.length}%`
             schedulerDataRef.current = schedulerData;
             // console.log(formatShiftSlots(mxShift))
             const defaultValue = await getValueFromMicroFlow(schedulerData);
             defaultsRef.current = setActiveView(defaultsRef.current, defaultValue, viewTypes);
             schedulerData.setViewType(getDefaultView(defaultsRef.current));
             schedulerData.config.setDefaultViewValue = getDefaultViewValue(defaultsRef.current);
-            setEvents(props.events);
-            schedulerData.setEvents(props.events);
+            // setEvents(props.events);
+            // schedulerData.setEvents(props.events);
             dispatch({ type: 'INITIALIZE', payload: schedulerData });
         };
 
@@ -318,7 +302,7 @@ const ReactPlanner = (props: any) => {
                 schedulerData.config.defaultExpanded = true;
                 return ViewType.Week;
             case "Month":
-                schedulerData.config.defaultExpanded = false;
+                schedulerData.config.defaultExpanded = true;
                 return ViewType.Month;
             case "Quarter":
                 schedulerData.config.defaultExpanded = false;
@@ -355,15 +339,26 @@ const ReactPlanner = (props: any) => {
                 click: () => onItemClick(item),
                 item: item,
                 resizable: Boolean(props.eventResizableAttr.get(item)?.value),
+                isTeamAssignment: true
             });
         });
-        setEvents(props.events);
-        schedulerData.setEvents(props.events);
+        const sortedData = props.events.slice().sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+        setEvents(sortedData);
+        schedulerData.setEvents(sortedData);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
     }, [props.eventData]);
 
     // Effect: Update resources from Mendix data when resourceData changes
     useEffect(() => {
+        // const newResourceList: any[] = [];
+        // props.resourceData?.items?.forEach(item => {
+        //     newResourceList.push({
+        //         id: props.resourceIdAttr.get(item).value?.toString()!,
+        //         name: props.resourceNameAttr.get(item).value?.toString()!
+        //     });
+        // });
+        // setResourcesInit(DemoData.resources);
+
         const newResourceList: any[] = DemoData.resources?.map((item) => {
             const id = item.id?.toString();
             const name = item.name?.toString();
@@ -411,8 +406,6 @@ const ReactPlanner = (props: any) => {
     const onSelectDate = (schedulerData: SchedulerData, date: string) => {
         schedulerData.setDate(date);
         updateViewStartEnd(schedulerData);
-        
-        
         // props.eventData.reload();
         schedulerData.setEvents(events);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
@@ -433,6 +426,12 @@ const ReactPlanner = (props: any) => {
         dispatch({ type: 'UPDATE_SCHEDULER', payload: _schedulerData });
     };
 
+    // const updateDefaultViewValue = (_schedulerData, propsDefault) => {
+    //     const key = viewMap[_schedulerData.viewType];
+    //     const isChecked = Boolean(key && propsDefault?.[key]);
+    //     _schedulerData.config = { ..._schedulerData.config, setDefaultViewValue: isChecked };
+    // };
+
     const updateDefaultViewValue = (schedulerData, propsDefault) => {
         const mapping = viewMap[schedulerData.viewType];
         const isChecked = !!(mapping && propsDefault[mapping.flag]);
@@ -449,7 +448,11 @@ const ReactPlanner = (props: any) => {
      * Sets the selected event in Mendix and executes any selection action.
      */
     const onItemClick = (_item: EventItem) => {
+        // props.eventSelection.setSelection(item);
+        // if (props.onEventSelection)
+        //   props.onEventSelection?.execute();
     }
+
     /**
      * Handler for creating a new event in the scheduler.
      * Sets the new event's resource, start, and end in Mendix and executes any new event action.
@@ -463,6 +466,12 @@ const ReactPlanner = (props: any) => {
         if (isActivity)
             props.newEventAction.execute()
     }
+
+    // Show loading state if event or resource data is not available
+    // if (!props.eventData || props.eventData.status !== ValueStatus.Available
+    //   || !props.resourceData || props.resourceData.status !== ValueStatus.Available) {
+    //   return <div />
+    // }
 
     const moveEvent = (schedulerData: SchedulerData, event: EventItem, slotId: string, slotName: string, start: string, end: string) => {
         const customEvent = event as EventItem;
@@ -484,6 +493,14 @@ const ReactPlanner = (props: any) => {
     // 🔹 Called when user resizes the start of an event
     const updateEventStart = (schedulerData: SchedulerData<EventItem>, event: any, newStart: string) => {
         console.log("resizeStarted:", newStart, event);
+        // props.eventSelection.setSelection(event.item);
+        // props.newEventResourceId.setValue(event.resourceId);
+        // props.newEventStart.setValue(new Date(newStart));
+        // props.newEventEnd.setValue(new Date(event.end));
+
+        // if (props.onResizeUpdate?.canExecute) {
+        //     props.onResizeUpdate.execute();
+        // }
         schedulerData.updateEventStart(event, newStart);
         schedulerData.setEvents(events);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
@@ -491,6 +508,13 @@ const ReactPlanner = (props: any) => {
 
     const updateEventEnd = (schedulerData: SchedulerData<EventItem>, event: any, newEnd: string) => {
         console.log("resizeEnded:", newEnd, event);
+        // props.eventSelection.setSelection(event.item);
+        // props.newEventResourceId.setValue(event.resourceId);
+        // props.newEventStart.setValue(new Date(event.start));
+        // props.newEventEnd.setValue(new Date(newEnd));
+        // if (props.onResizeUpdate?.canExecute) {
+        //     props.onResizeUpdate.execute();
+        // }
         schedulerData.updateEventEnd(event, newEnd);
         schedulerData.setEvents(events);
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
@@ -532,6 +556,12 @@ const ReactPlanner = (props: any) => {
 
     const onShiftCountChange = (schedulerData, shiftCount) => {
         schedulerData.config.shiftCount = Number(shiftCount);
+        // schedulerData.config.endHour = (8 * shiftCount) - 1;
+        // const behaviors = schedulerData?.behaviors;
+        // if (behaviors) {
+        // const baseDate = new Date();
+        // schedulerData.behaviors.getCustomDateFunc(schedulerData, 0, baseDate);
+        // }
         const BASE_SHIFTS = [
             {
                 ShiftId: 5,
@@ -565,6 +595,7 @@ const ReactPlanner = (props: any) => {
         const shifts = Number(shiftCount) === 2 ? BASE_SHIFTS : [...BASE_SHIFTS, ...EXTRA_SHIFTS];
         schedulerData.config.shiftSlots = formatShiftSlots(shifts);
 
+        schedulerData.config.countDays = 15;
         schedulerData.behaviors.getCustomDateFunc(schedulerData, 1, null);
         schedulerData.setViewAfterSettingsUpdate();
         dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
@@ -586,6 +617,14 @@ const ReactPlanner = (props: any) => {
             console.log("event data eventItemIconClick", event, schedulerData, event.id, iconType);
             setSelectedEvent(event);
         }
+        if (iconType === IconType.Team) {
+            console.log("event data eventItemIconClick", event, schedulerData, event.id, iconType);
+            setSelectedEvent(event);
+        }
+    }
+
+    const onSlotItemIconClick = (_schedulerData: SchedulerData<EventItem>, _item: any, iconType: any) => {
+        console.log('You clciked on event icon==>', iconType)
     }
 
     const onResourceChange = (schedulerData: any, resourceType: any) => {
@@ -597,6 +636,15 @@ const ReactPlanner = (props: any) => {
             filterData = dataTest;
         }
         schedulerData.setResources(filterData);
+    }
+
+    const onHandleReload = (schedulerData: any) => {
+        schedulerData.config.spinValue = true;
+
+        setTimeout(() => {
+            schedulerData.config.spinValue = false;
+            dispatch({ type: 'UPDATE_SCHEDULER', payload: schedulerData });
+        }, 2000);
     }
 
     // Initialize ResizeObserver once
@@ -614,24 +662,22 @@ const ReactPlanner = (props: any) => {
         });
 
         observer.observe(headerTable);
-        return () => {
-            observer.disconnect();
-        };
-    }, [schedulerData]);
+        return () => observer.disconnect();
+    }, [plannerRef]);
 
     const customNavArrowClick = (schedulerData, value) => {
         const startDate = new Date(schedulerData.startDate).toDateString();
         const endDate = new Date(schedulerData.endDate).toDateString();
         const moveTimes = !schedulerData.config.displayWeekend &&
-                ((value === 'right' && endDate.startsWith('Fri')) ||
+            ((value === 'right' && endDate.startsWith('Fri')) ||
                 (value === 'left' && startDate.startsWith('Mon')))
-                ? 3 : 1;
+            ? 3 : 1;
         const element = document.querySelector('.scheduler-main');
         for (let i = 0; i <= moveTimes - 1; i++) {
             if (value === 'right') {
                 schedulerData.config.customNavDirection = 'right';
                 element?.scrollTo({
-                    left: element.scrollWidth - element.clientWidth-2,
+                    left: element.scrollWidth - element.clientWidth - 2,
                     behavior: 'smooth'
                 });
 
@@ -657,6 +703,7 @@ const ReactPlanner = (props: any) => {
                 <Row>
                     <Col style={{ width: '100%' }}>
                         <Scheduler
+                            key={props.scheduleType}
                             schedulerData={state.viewModel}
                             prevClick={prevClick}
                             nextClick={nextClick}
@@ -677,12 +724,13 @@ const ReactPlanner = (props: any) => {
                             eventItemIconClick={eventItemIconClick}
                             onDefaultChange={onDefaultChange}
                             onResourceChange={onResourceChange}
+                            onHandleReload={onHandleReload}
                             customNavArrowClick={customNavArrowClick}
+                            slotItemIconClick={onSlotItemIconClick}
                         />
                     </Col>
                 </Row>
             )}
-
         </div>
     );
 }

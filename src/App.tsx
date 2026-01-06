@@ -14,7 +14,7 @@ function App() {
       label: 'Schedule',
       children: (
         <div className='enable-tab'>
-          <ReactPlanner events={DemoData.events}/>
+          <ReactPlanner events={DemoData.events} scheduleType='Schedule' />
         </div>
       ),
     },
@@ -23,7 +23,7 @@ function App() {
       label: 'Team',
       children: (
         <div className='enable-tab'>
-          <ReactPlanner events={DemoData.eventsTab}/>
+          <ReactPlanner events={DemoData.eventsTab} scheduleType='Team' />
         </div>
       ),
     }
@@ -31,11 +31,12 @@ function App() {
 
   const onChange = (key: string) => {
     console.log(key);
+    //destroyOnHidden
   };
 
   return (
     <>
-      <Tabs defaultActiveKey="1" destroyOnHidden  items={items} onChange={onChange} />
+      <Tabs defaultActiveKey="1"  items={items} onChange={onChange} />
       {/* <ReactPlanner/> */}
       {/* <NewApp /> */}
     </>

@@ -1,11 +1,9 @@
-import { LeftOutlined, RightOutlined, ZoomInOutlined, ZoomOutOutlined, FullscreenOutlined, SettingOutlined, CalendarOutlined, LineOutlined } from '@ant-design/icons';
-import { Button, Calendar, Checkbox, Col, Popover, Radio, Row, Space, Spin, Switch, Typography } from 'antd';
+import React, { useState, createElement, useEffect } from 'react';
+import { LeftOutlined, RightOutlined, ZoomInOutlined, ZoomOutOutlined, FullscreenOutlined, SettingOutlined, CalendarOutlined, LineOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Calendar, Checkbox, Col, Popover, Radio, Row, Space, Spin, Switch, Typography, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import PropTypes from 'prop-types';
-import React, { useState, createElement, useEffect } from 'react';
 import { DATE_FORMAT } from '../config/default';
-
-import { Select } from 'antd';
 
 const { Text } = Typography;
 
@@ -16,6 +14,7 @@ const SchedulerHeader = React.forwardRef(({
   onViewChange,
   onToggleChange,
   onDefaultChange,
+  onHandleReload,
   onShiftCountChange,
   onZoomIn,
   onZoomOut,
@@ -44,25 +43,34 @@ const SchedulerHeader = React.forwardRef(({
   const shiftCount = schedulerData.config.shiftCount;
   const defaultValue = `${viewType}${showAgenda ? 1 : 0}${isEventPerspective ? 1 : 0}`;
   const [isToggleChecked, setIsToggleChecked] = useState(displayWeekend);
- // console.log('schedulerData.config.displayWeekend ==>',schedulerData.config.displayWeekend)
   const defaultViewValue = Boolean(config.setDefaultViewValue);
   const [isDefaultViewValue, setDefaultViewValue] = useState(defaultViewValue);
+  const spinValue = schedulerData.config.spinValue;
+  const [isLoadSpin, setLoadSpin] = useState(spinValue);
+  const enableRefresh = config.enableRefresh;
 
   const handleToggle = (event) => {
     setIsToggleChecked(!isToggleChecked);
     handleEvents(onToggleChange, true, event)
   };
 
-
-
   useEffect(() => {
     setDefaultViewValue(Boolean(config.setDefaultViewValue));
   }, [config.setDefaultViewValue]);
+
+  useEffect(() => {
+    setLoadSpin(Boolean(config.spinValue));
+  }, [config.spinValue]);
 
   const handleDefaultChange = (e) => {
     const checked = e.target.checked;
     setDefaultViewValue(checked);
     handleEvents(onDefaultChange, false, checked);
+  };
+
+  const handleReload = (e) => {
+    setLoadSpin(spinValue);
+    handleEvents(onHandleReload, false, e);
   };
 
   const handleEvents = (func, isViewSpinning, funcArg = undefined) => {
@@ -182,9 +190,9 @@ const SchedulerHeader = React.forwardRef(({
     setSettingsVisible(newOpen);
   };
 
-  const hideSettings = () => {
-    setSettingsVisible(false);
-  };
+  // const hideSettings = () => {
+  //   setSettingsVisible(false);
+  // };
 
   const radioButtonList = config.views.map(item => (
     <RadioButton
@@ -228,14 +236,10 @@ const SchedulerHeader = React.forwardRef(({
                   </span>
                 </Popover>
               ) : (<span className="header2-text-label">{dateLabel}</span>)}
-              {/* <span className="icon-nav rightOutlined-nav" onClick={() => handleEvents(goNext, false)}>
-                <span className='right-nav-icon'></span>
-              </span> */}
               <RightOutlined className="icon-nav rightOutlined-nav" onClick={() => handleEvents(goNext, false)} />
             </div>
-            <Spin spinning={dateSpinning} />
-          </Space>
-          <Space>
+            {/* <Spin spinning={dateSpinning} /> */}
+
             <Popover
               content={settings}
               placement="bottomLeft"
@@ -243,9 +247,17 @@ const SchedulerHeader = React.forwardRef(({
               title="Settings"
               open={settingsVisible}
               onOpenChange={handleSettingsOpenChange}>
-              <SettingOutlined className='icon setting-icon' />
-              {/* <div className='setting-button'></div> */}
+
+              <Tooltip title="Settings">
+                <SettingOutlined className='icon setting-icon' />
+              </Tooltip>
             </Popover>
+
+            {enableRefresh && (<LineOutlined className='split-line' />)}
+
+            {enableRefresh && (<Tooltip title="Refresh Constraints">
+              <ReloadOutlined spin={isLoadSpin} style={{ fontSize: 18, cursor: 'pointer', color: '#545A66' }} onClick={handleReload} />
+            </Tooltip>)}
           </Space>
         </div>
       </Col>

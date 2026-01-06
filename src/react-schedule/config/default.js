@@ -10,4 +10,7 @@ export const SummaryPos = { Top: 0, TopRight: 1, TopLeft: 2, Bottom: 3, BottomRi
 
 export const DnDTypes = { EVENT: 'event' };
 
-export const IconType = { Info: 'info', Constraint: 'constraint', Recurrent: 'recurrent' };
+export const IconType = { Info: 'info', Constraint: 'constraint', Recurrent: 'recurrent', Team: 'team', Add: 'add', Remove: 'remove', Delete: 'delete' };
+
+export const ScheduleType = { Schedule: 'Schedule', Team: 'Team' };
+
